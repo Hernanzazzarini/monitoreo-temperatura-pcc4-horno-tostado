@@ -1,0 +1,28 @@
+/* You can add global styles to this file, and also import other style files */
+
+/* Reportes PDF: se generan con la impresión del navegador ("Guardar como PDF") */
+.solo-imprimir {
+  display: none !important;
+}
+
+@page {
+  size: A4 landscape;
+  margin: 10mm;
+}
+
+@media print {
+  .no-imprimir {
+    display: none !important;
+  }
+
+  .solo-imprimir {
+    display: block !important;
+  }
+
+  html,
+  body {
+    background: white !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

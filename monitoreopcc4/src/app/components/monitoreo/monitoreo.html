@@ -1,0 +1,100 @@
+<div class="monitoreo-container">
+  <app-encabezado titulo="Temperatura de Horno · PCC N°4"></app-encabezado>
+
+  <main class="content">
+    <div class="card">
+      <h2>Nuevo Control</h2>
+      <p class="subtitle">
+        Elegí el turno y la hora set del control que corresponde. La fecha y la hora de control
+        (hora real de carga) se completan automáticamente al guardar.
+      </p>
+
+      <form [formGroup]="monitoreoForm" (ngSubmit)="onSubmit()">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="turno">Turno</label>
+            <select id="turno" (change)="cambiarTurno($any($event.target).value)">
+              <option *ngFor="let t of turnos" [value]="t.id" [selected]="t.id === turno.id">{{ t.nombre }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="horaSet">Hora set</label>
+            <select id="horaSet" formControlName="horaSet">
+              <option *ngFor="let h of horas" [value]="h">{{ h }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="responsable">Responsable</label>
+            <input id="responsable" type="text" formControlName="responsable" placeholder="Nombre y apellido" />
+          </div>
+        </div>
+
+        <fieldset class="seccion" [class.desvio]="quemadoresCompletos && !quemadoresCumplen">
+          <legend>Quemadores (°C)</legend>
+          <p class="nota">Verificar en 2 quemadores consecutivos temperaturas ≥ {{ limites.temperaturaMinQuemador }}°C</p>
+          <div class="quemadores" formArrayName="quemadores">
+            <div class="form-group" *ngFor="let n of numerosQuemador; let i = index">
+              <label [for]="'q' + n">Quemador {{ n }}</label>
+              <input
+                [id]="'q' + n"
+                type="number"
+                step="0.1"
+                inputmode="decimal"
+                [formControlName]="i"
+                [class.bajo]="quemadorBajo(i)"
+              />
+              <span *ngIf="quemadorBajo(i)" class="bajo-texto">&lt; {{ limites.temperaturaMinQuemador }}°C</span>
+            </div>
+          </div>
+          <p *ngIf="quemadoresCompletos && !quemadoresCumplen" class="aviso">
+            Ningún par de quemadores consecutivos alcanza {{ limites.temperaturaMinQuemador }}°C.
+          </p>
+        </fieldset>
+
+        <div class="form-row">
+          <div class="form-group" [class.desvio]="velocidadFueraDeRango">
+            <label for="velocidadBanda">
+              Velocidad banda horno
+              <span class="rango">({{ limites.velocidad.min | number: '1.2-2' }} – {{ limites.velocidad.max | number: '1.1-2' }})</span>
+            </label>
+            <input id="velocidadBanda" type="number" step="0.01" inputmode="decimal" formControlName="velocidadBanda" />
+            <p *ngIf="velocidadFueraDeRango" class="aviso">Fuera de rango.</p>
+          </div>
+          <div class="form-group" [class.desvio]="alturaFueraDeRango">
+            <label for="alturaCamara">
+              Altura cámara
+              <span class="rango">({{ limites.altura.min }} – {{ limites.altura.max }} cm)</span>
+            </label>
+            <input id="alturaCamara" type="number" step="0.1" inputmode="decimal" formControlName="alturaCamara" />
+            <p *ngIf="alturaFueraDeRango" class="aviso">Fuera de rango.</p>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="observaciones">Observaciones</label>
+          <textarea id="observaciones" rows="2" formControlName="observaciones"></textarea>
+        </div>
+
+        <div class="form-group" [class.desvio]="hayDesvio">
+          <label for="accionesCorrectivas">
+            Acciones correctivas
+            <span *ngIf="hayDesvio" class="obligatorio">(obligatorio: hay valores fuera de rango)</span>
+          </label>
+          <textarea id="accionesCorrectivas" rows="2" formControlName="accionesCorrectivas"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="modificaciones">Modificaciones</label>
+          <textarea id="modificaciones" rows="2" formControlName="modificaciones"></textarea>
+        </div>
+
+        <div *ngIf="mensajeExito" class="alert success-alert">{{ mensajeExito }}</div>
+        <div *ngIf="mensajeError" class="alert error-alert">{{ mensajeError }}</div>
+
+        <button type="submit" [disabled]="monitoreoForm.invalid || loading" class="btn-primary">
+          {{ loading ? 'Guardando...' : 'Registrar Control' }}
+        </button>
+      </form>
+    </div>
+  </main>
+</div>

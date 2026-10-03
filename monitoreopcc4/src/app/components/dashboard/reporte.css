@@ -1,0 +1,129 @@
+/* Reporte PDF del dashboard (vista de impresión). Usa las variables de color de .dashboard */
+.reporte-cabecera {
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 2px solid #2c3e50;
+  padding-bottom: 6px;
+  margin-bottom: 10px;
+}
+
+.reporte-cabecera h1 {
+  margin: 0;
+  font-size: 16pt;
+}
+
+.reporte-cabecera p,
+.reporte-cabecera dl {
+  margin: 0;
+  font-size: 9pt;
+}
+
+.reporte-cabecera dl div {
+  display: flex;
+  gap: 6px;
+}
+
+.reporte-cabecera dt {
+  font-weight: 600;
+}
+
+.reporte-cabecera dd {
+  margin: 0;
+}
+
+.reporte-detalle {
+  break-before: page;
+  font-size: 7.5pt;
+}
+
+.reporte-detalle h2 {
+  font-size: 11pt;
+  margin: 0 0 6px;
+}
+
+.reporte-detalle table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.reporte-detalle th,
+.reporte-detalle td {
+  border: 1px solid #c3c2b7;
+  padding: 2px 4px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.reporte-detalle th {
+  background: #eceff3;
+}
+
+.reporte-detalle thead {
+  display: table-header-group;
+}
+
+.reporte-detalle tr {
+  break-inside: avoid;
+}
+
+.reporte-detalle .num {
+  text-align: right;
+}
+
+.reporte-detalle tr.desvio td {
+  background: #fdecec;
+}
+
+.reporte-detalle .bajo {
+  color: var(--critico-texto);
+  font-weight: 600;
+}
+
+.firmas {
+  display: flex;
+  gap: 3rem;
+  margin-top: 40px;
+}
+
+.firmas div {
+  flex: 1;
+  border-top: 1px solid #0b0b0b;
+  padding-top: 4px;
+  font-size: 8pt;
+}
+
+@media print {
+  .reporte-cabecera {
+    display: flex !important;
+  }
+
+  .dashboard {
+    min-height: 0;
+    background: white;
+  }
+
+  .content {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .cuerpo.refrescando {
+    opacity: 1;
+  }
+
+  .kpi,
+  .card {
+    box-shadow: none;
+    border: 1px solid var(--grid);
+    break-inside: avoid;
+  }
+
+  .kpis {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .grilla {
+    grid-template-columns: 1fr 1fr;
+  }
+}

@@ -1,0 +1,97 @@
+<div class="grafico" #contenedor>
+  <ul *ngIf="series.length > 1" class="leyenda">
+    <li *ngFor="let s of series">
+      <span class="muestra" [ngClass]="s.clase"></span>{{ s.nombre }}
+    </li>
+  </ul>
+
+  <svg
+    [attr.width]="ancho"
+    [attr.height]="alto"
+    [attr.viewBox]="'0 0 ' + ancho + ' ' + alto"
+    role="img"
+    [attr.aria-label]="descripcion"
+  >
+    <g [attr.transform]="'translate(' + m.left + ',' + m.top + ')'">
+      <ng-container *ngIf="columnas.length">
+        <g *ngFor="let t of yTicks">
+          <line class="grid" x1="0" [attr.x2]="w" [attr.y1]="t.y" [attr.y2]="t.y" />
+          <text class="eje" x="-8" [attr.y]="t.y" dy="0.32em" text-anchor="end">{{ t.label }}</text>
+        </g>
+
+        <ng-container *ngIf="umbralY != null">
+          <line class="umbral" x1="0" [attr.x2]="w" [attr.y1]="umbralY" [attr.y2]="umbralY" />
+          <text class="etq-ref" [attr.x]="w + 8" [attr.y]="umbralY" dy="0.32em">
+            {{ etiquetaUmbral }}
+          </text>
+        </ng-container>
+
+        <g
+          *ngFor="let c of columnas; let i = index"
+          [class.atenuada]="hover != null && hover !== i"
+        >
+          <path *ngFor="let s of c.segmentos" class="columna" [ngClass]="s.clase" [attr.d]="s.d" />
+          <text
+            *ngIf="valorEnTope && c.total > 0"
+            class="etq-tope"
+            [attr.x]="c.x"
+            [attr.y]="c.topeY - 6"
+            text-anchor="middle"
+          >
+            {{ formato(c.total) }}
+          </text>
+          <text
+            *ngIf="c.mostrarEtiqueta"
+            class="eje"
+            [attr.x]="c.x"
+            [attr.y]="h + 18"
+            text-anchor="middle"
+          >
+            {{ c.cat.etiqueta }}
+          </text>
+          <!-- Área de interacción: toda la franja de la categoría, no sólo la columna pintada -->
+          <rect
+            class="captura"
+            [attr.x]="c.x - banda / 2"
+            y="0"
+            [attr.width]="banda"
+            [attr.height]="h"
+            tabindex="0"
+            [attr.aria-label]="c.cat.etiqueta + ': ' + formato(c.total)"
+            (pointermove)="marcar(i)"
+            (pointerleave)="marcar(null)"
+            (focus)="marcar(i)"
+            (blur)="marcar(null)"
+            (keydown)="teclado($event)"
+          />
+        </g>
+        <line class="base" x1="0" [attr.x2]="w" [attr.y1]="h" [attr.y2]="h" />
+      </ng-container>
+    </g>
+  </svg>
+
+  <div
+    *ngIf="activa as c"
+    class="tooltip"
+    [class.izquierda]="c.x > w * 0.65"
+    [class.derecha]="c.x < w * 0.35"
+    [style.left.px]="m.left + c.x"
+  >
+    <div class="tt-sec">{{ c.cat.etiqueta }}</div>
+    <ng-container *ngIf="series.length > 1; else unaSerie">
+      <div *ngFor="let s of series; let k = index" class="tt-fila">
+        <span class="clave" [ngClass]="s.clase"></span>
+        <strong>{{ formato(c.cat.valores[k]) }}</strong>
+        <span class="tt-sec">{{ s.nombre }}</span>
+      </div>
+    </ng-container>
+    <ng-template #unaSerie>
+      <div class="tt-valor">
+        <strong>{{ formato(c.total) }}</strong>
+      </div>
+    </ng-template>
+    <div *ngIf="c.cat.detalle" class="tt-sec">{{ c.cat.detalle }}</div>
+  </div>
+
+  <p *ngIf="!columnas.length" class="sin-datos">Sin datos en el período.</p>
+</div>

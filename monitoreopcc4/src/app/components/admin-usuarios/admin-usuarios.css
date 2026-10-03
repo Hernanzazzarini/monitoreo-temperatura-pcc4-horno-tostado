@@ -1,0 +1,139 @@
+.admin-container {
+    min-height: 100vh;
+    background-color: #f4f6f9;
+  }
+  
+  .content {
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+  }
+  
+  .card {
+    background: white;
+    padding: 2rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  }
+  
+  .subtitle {
+    color: #7f8c8d;
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .users-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+  }
+  
+  .users-table th,
+.users-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  
+  .users-table th {
+    background-color: #f8fafc;
+    color: #334155;
+    font-weight: 600;
+  }
+  
+  .badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+  
+  .badge-admin {
+    background-color: #fee2e2;
+    color: #b91c1c;
+  }
+  
+  .badge-operator {
+    background-color: #e0f2fe;
+    color: #0369a1;
+  }
+  
+  .card + .card {
+    margin-top: 1.5rem;
+  }
+
+  .form-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .form-group {
+    flex: 1 1 180px;
+  }
+
+  .form-group-rol {
+    flex: 0 1 160px;
+  }
+
+  label {
+    display: block;
+    margin-bottom: 0.4rem;
+    font-weight: 500;
+    color: #34495e;
+  }
+
+  input,
+select {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #dcdde1;
+    border-radius: 6px;
+    font-size: 1rem;
+    box-sizing: border-box;
+    background: white;
+  }
+
+  .btn-primary {
+    width: 100%;
+    padding: 0.75rem;
+    background-color: #27ae60;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 1rem;
+  }
+
+  .btn-primary:disabled {
+    background-color: #bdc3c7;
+    cursor: not-allowed;
+  }
+
+  .alert {
+    padding: 0.75rem;
+    border-radius: 6px;
+    margin-top: 1rem;
+    font-size: 0.9rem;
+    text-align: center;
+  }
+
+  .success-alert {
+    background-color: #d4edda;
+    color: #155724;
+  }
+
+  .error-alert {
+    background-color: #f8d7da;
+    color: #721c24;
+  }
+
+  .loading,
+.empty {
+    text-align: center;
+    padding: 2rem;
+    color: #64748b;
+  }

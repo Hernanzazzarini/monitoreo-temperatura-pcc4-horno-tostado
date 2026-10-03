@@ -1,0 +1,86 @@
+<div class="historial-container">
+  <app-encabezado titulo="Historial · PCC N°4"></app-encabezado>
+
+  <main class="content">
+    <div class="card">
+      <div class="toolbar">
+        <div class="filtros" *ngIf="cargado">
+          <label>
+            Desde
+            <input type="date" [(ngModel)]="filtroDesde" [max]="filtroHasta || null" />
+          </label>
+          <label>
+            Hasta
+            <input type="date" [(ngModel)]="filtroHasta" [min]="filtroDesde || null" />
+          </label>
+          <label class="check">
+            <input type="checkbox" [(ngModel)]="soloDesvios" />
+            Solo desvíos ({{ cantidadDesvios }})
+          </label>
+          <button *ngIf="filtroDesde || filtroHasta || soloDesvios" class="btn-link" (click)="limpiarFiltros()">
+            Limpiar filtros
+          </button>
+        </div>
+        <button class="btn-primary" (click)="cargar()" [disabled]="loading">
+          {{ loading ? 'Cargando...' : cargado ? 'Actualizar' : 'Ver registros' }}
+        </button>
+      </div>
+
+      <p *ngIf="!cargado && !loading" class="vacio">
+        Tocá <strong>Ver registros</strong> para leer la planilla (puede pedir autorización de Google).
+      </p>
+
+      <div *ngIf="mensajeError" class="alert error-alert">{{ mensajeError }}</div>
+
+      <ng-container *ngIf="cargado">
+        <p class="resumen">
+          {{ registrosFiltrados.length }} de {{ registros.length }} controles
+        </p>
+
+        <div class="tabla-scroll" *ngIf="registrosFiltrados.length > 0; else sinResultados">
+          <table class="tabla">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Hora set</th>
+                <th>Hora control</th>
+                <th *ngFor="let n of [1, 2, 3, 4, 5, 6]">Q{{ n }}</th>
+                <th>Vel. banda</th>
+                <th>Alt. cám.</th>
+                <th>Observaciones</th>
+                <th>Acciones correctivas</th>
+                <th>Modificaciones</th>
+                <th>Responsable</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let r of registrosFiltrados" [class.fila-desvio]="esDesvio(r)">
+                <td class="nowrap">{{ r.fecha }}</td>
+                <td>{{ r.horaSet }}</td>
+                <td>{{ r.horaControl }}</td>
+                <td
+                  *ngFor="let t of r.quemadores"
+                  class="num"
+                  [class.bajo]="t != null && t < limites.temperaturaMinQuemador"
+                  [class.mal]="!quemadoresOk(r)"
+                >
+                  {{ t ?? '–' }}
+                </td>
+                <td class="num" [class.mal]="velocidadMal(r)">{{ r.velocidadBanda ?? '–' }}</td>
+                <td class="num" [class.mal]="alturaMal(r)">{{ r.alturaCamara ?? '–' }}</td>
+                <td class="texto">{{ r.observaciones }}</td>
+                <td class="texto">{{ r.accionesCorrectivas }}</td>
+                <td class="texto">{{ r.modificaciones }}</td>
+                <td class="nowrap">{{ r.responsable }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <ng-template #sinResultados>
+          <p class="vacio">No hay controles para los filtros elegidos.</p>
+        </ng-template>
+      </ng-container>
+    </div>
+  </main>
+</div>

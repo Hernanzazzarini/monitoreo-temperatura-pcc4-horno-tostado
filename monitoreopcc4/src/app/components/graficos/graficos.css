@@ -1,0 +1,193 @@
+/* Los colores vienen de variables definidas en el contenedor (dashboard) */
+.grafico {
+  position: relative;
+  width: 100%;
+}
+
+svg {
+  display: block;
+  overflow: visible;
+  /* Con viewBox se achica al ancho disponible (por ejemplo, la hoja del reporte PDF) */
+  max-width: 100%;
+  height: auto;
+}
+
+@media print {
+  .tooltip {
+    display: none;
+  }
+}
+
+.grid {
+  stroke: var(--grid, #e1e0d9);
+  stroke-width: 1;
+}
+
+.base {
+  stroke: var(--base, #c3c2b7);
+  stroke-width: 1;
+}
+
+.eje {
+  fill: var(--tinta-tenue, #898781);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.banda {
+  fill: var(--bueno, #0ca30c);
+  opacity: 0.08;
+}
+
+.umbral {
+  stroke: var(--tinta-2, #52514e);
+  stroke-width: 1;
+}
+
+.etq-ref {
+  fill: var(--tinta-2, #52514e);
+  font-size: 11px;
+  /* halo del color de la superficie: se lee aunque la línea pase por encima */
+  paint-order: stroke;
+  stroke: var(--superficie, #fff);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+
+.linea {
+  fill: none;
+  stroke: var(--serie-1, #2a78d6);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.marca {
+  fill: var(--serie-1, #2a78d6);
+  stroke: var(--superficie, #fff);
+  stroke-width: 2;
+}
+
+.marca.fuera {
+  fill: var(--critico, #d03b3b);
+}
+
+.cruz {
+  stroke: var(--tinta-tenue, #898781);
+  stroke-width: 1;
+}
+
+.etq-fin,
+.etq-tope {
+  fill: var(--tinta-1, #0b0b0b);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.captura {
+  fill: transparent;
+  outline: none;
+}
+
+.captura:focus-visible {
+  stroke: var(--serie-1, #2a78d6);
+  stroke-width: 1;
+}
+
+.serie-1 {
+  fill: var(--serie-1, #2a78d6);
+  background: var(--serie-1, #2a78d6);
+  stroke: var(--serie-1, #2a78d6);
+}
+
+.critico {
+  fill: var(--critico, #d03b3b);
+  background: var(--critico, #d03b3b);
+  stroke: var(--critico, #d03b3b);
+}
+
+.columna {
+  stroke: none;
+}
+
+.atenuada .columna {
+  opacity: 0.45;
+}
+
+.leyenda {
+  display: flex;
+  gap: 1rem;
+  list-style: none;
+  margin: 0 0 0.5rem;
+  padding: 0;
+  font-size: 0.8rem;
+  color: var(--tinta-2, #52514e);
+}
+
+.muestra {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  margin-right: 6px;
+  vertical-align: -1px;
+}
+
+.tooltip {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  background: var(--superficie, #fff);
+  border: 1px solid rgba(11, 11, 11, 0.12);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  padding: 0.45rem 0.6rem;
+  font-size: 0.8rem;
+  pointer-events: none;
+  width: max-content;
+  max-width: 230px;
+  z-index: 2;
+}
+
+.tooltip.izquierda {
+  transform: translateX(calc(-100% - 12px));
+}
+
+.tooltip.derecha {
+  transform: translateX(12px);
+}
+
+.tt-valor strong,
+.tt-fila strong {
+  color: var(--tinta-1, #0b0b0b);
+  font-size: 0.95rem;
+}
+
+.tt-sec {
+  color: var(--tinta-2, #52514e);
+}
+
+.tt-estado {
+  margin-left: 0.4rem;
+  color: var(--critico-texto, #b42525);
+  font-weight: 600;
+}
+
+.tt-fila {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.clave {
+  display: inline-block;
+  width: 12px;
+  height: 2px;
+}
+
+.sin-datos {
+  color: var(--tinta-tenue, #898781);
+  text-align: center;
+  padding: 3rem 0;
+  margin: 0;
+}

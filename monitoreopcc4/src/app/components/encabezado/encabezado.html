@@ -1,0 +1,88 @@
+<header class="header">
+  <div class="info">
+    <h1>{{ titulo }}</h1>
+    <span *ngIf="email" class="usuario">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="8" r="4" />
+        <path d="M4 21c0-4 3.6-7 8-7s8 3 8 7" />
+      </svg>
+      {{ email }}
+    </span>
+  </div>
+
+  <nav class="acciones">
+    <a *ngFor="let e of enlaces" class="btn-nav" [routerLink]="e.ruta">{{ e.texto }}</a>
+
+    <div class="notif">
+      <button
+        type="button"
+        class="campana"
+        [class.con-alertas]="noLeidas > 0"
+        (click)="alternar()"
+        [attr.aria-expanded]="abierto"
+        [attr.aria-label]="
+          noLeidas ? noLeidas + ' notificaciones sin leer' : 'Notificaciones'
+        "
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z" />
+          <path d="M10 20.5a2 2 0 0 0 4 0" />
+        </svg>
+        <span *ngIf="noLeidas > 0" class="badge">{{ noLeidas > 9 ? '9+' : noLeidas }}</span>
+      </button>
+
+      <div *ngIf="abierto" class="panel" role="dialog" aria-label="Notificaciones">
+        <div class="panel-cabecera">
+          <strong>Notificaciones</strong>
+          <button type="button" class="btn-link" (click)="revisar()" [disabled]="revisando">
+            {{ revisando ? 'Revisando…' : 'Revisar planilla' }}
+          </button>
+        </div>
+        <p class="panel-sub">Quemadores bajo 80 °C sin par consecutivo que cumpla · últimos 7 días</p>
+
+        <p *ngIf="errorRevision" class="panel-error">{{ errorRevision }}</p>
+
+        <p *ngIf="!alertas" class="panel-vacio">
+          Todavía no se leyó la planilla. Tocá <strong>Revisar planilla</strong>.
+        </p>
+        <p *ngIf="alertas && !alertas.length" class="panel-vacio">
+          Sin quemadores bajo 80 °C en los últimos 7 días.
+        </p>
+
+        <ul *ngIf="alertas?.length" class="lista">
+          <li *ngFor="let a of alertas" [class.nueva]="esNueva(a)">
+            <button type="button" class="alerta" (click)="verEnHistorial()">
+              <span class="icono" aria-hidden="true">!</span>
+              <span class="texto">
+                <span class="titulo">{{ a.titulo }}</span>
+                <span class="detalle">{{ a.detalle }}</span>
+                <span class="estado" [class.sin-accion]="!a.conAccion">
+                  {{ a.conAccion ? 'Con acción correctiva' : 'Sin acción correctiva' }}
+                </span>
+              </span>
+            </button>
+          </li>
+        </ul>
+
+        <div class="panel-pie">
+          <ng-container [ngSwitch]="permiso">
+            <button
+              *ngSwitchCase="'default'"
+              type="button"
+              class="btn-link"
+              (click)="activarNavegador()"
+            >
+              Activar avisos en este equipo
+            </button>
+            <span *ngSwitchCase="'granted'">
+              Avisos activados: se revisa cada 5 min con la sesión abierta.
+            </span>
+            <span *ngSwitchCase="'denied'">Los avisos están bloqueados en el navegador.</span>
+          </ng-container>
+        </div>
+      </div>
+    </div>
+
+    <button type="button" class="btn-logout" (click)="logout()">Cerrar sesión</button>
+  </nav>
+</header>

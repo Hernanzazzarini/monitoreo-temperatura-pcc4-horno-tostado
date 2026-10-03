@@ -1,0 +1,152 @@
+.historial-container {
+  min-height: 100vh;
+  background-color: #f4f6f9;
+}
+
+.content {
+  max-width: 1400px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+.card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-end;
+}
+
+.filtros label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+  color: #34495e;
+}
+
+.filtros .check {
+  flex-direction: row;
+  align-items: center;
+  padding-bottom: 0.5rem;
+}
+
+.filtros input[type='date'] {
+  padding: 0.5rem;
+  border: 1px solid #dcdde1;
+  border-radius: 6px;
+}
+
+.btn-primary {
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background-color: #27ae60;
+  font-weight: 600;
+}
+
+.btn-primary:disabled {
+  background-color: #bdc3c7;
+  cursor: not-allowed;
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: #3498db;
+  cursor: pointer;
+  padding-bottom: 0.5rem;
+}
+
+.resumen,
+.vacio {
+  color: #7f8c8d;
+  font-size: 0.9rem;
+}
+
+.vacio {
+  text-align: center;
+  padding: 2rem 0;
+}
+
+.tabla-scroll {
+  overflow-x: auto;
+}
+
+.tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.tabla th,
+.tabla td {
+  padding: 8px;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+  vertical-align: top;
+}
+
+.tabla th {
+  background-color: #fbe3d0;
+  color: #334155;
+  white-space: nowrap;
+}
+
+.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+.texto {
+  min-width: 140px;
+}
+
+.fila-desvio {
+  background-color: #fdf2f2;
+}
+
+.mal {
+  color: #b91c1c;
+  font-weight: 600;
+}
+
+.bajo {
+  color: #c0392b;
+}
+
+.alert {
+  padding: 0.75rem;
+  border-radius: 6px;
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.error-alert {
+  background-color: #f8d7da;
+  color: #721c24;
+}

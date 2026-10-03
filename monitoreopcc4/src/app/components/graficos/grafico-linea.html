@@ -1,0 +1,97 @@
+<div class="grafico" #contenedor>
+  <svg
+    [attr.width]="ancho"
+    [attr.height]="alto"
+    [attr.viewBox]="'0 0 ' + ancho + ' ' + alto"
+    role="img"
+    [attr.aria-label]="descripcion"
+  >
+    <g [attr.transform]="'translate(' + m.left + ',' + m.top + ')'">
+      <ng-container *ngIf="vistaPuntos.length">
+        <ng-container *ngIf="bandaY">
+          <rect class="banda" x="0" [attr.y]="bandaY.y" [attr.width]="w" [attr.height]="bandaY.h" />
+          <text *ngIf="etiquetaBanda" class="etq-ref" x="6" [attr.y]="bandaY.y + 13">
+            {{ etiquetaBanda }}
+          </text>
+        </ng-container>
+
+        <g *ngFor="let t of yTicks">
+          <line class="grid" x1="0" [attr.x2]="w" [attr.y1]="t.y" [attr.y2]="t.y" />
+          <text class="eje" x="-8" [attr.y]="t.y" dy="0.32em" text-anchor="end">{{ t.label }}</text>
+        </g>
+        <line class="base" x1="0" [attr.x2]="w" [attr.y1]="h" [attr.y2]="h" />
+        <text
+          *ngFor="let t of xTicks"
+          class="eje"
+          [attr.x]="t.x"
+          [attr.y]="h + 18"
+          [attr.text-anchor]="t.anchor"
+        >
+          {{ t.label }}
+        </text>
+
+        <ng-container *ngIf="umbralY != null">
+          <line class="umbral" x1="0" [attr.x2]="w" [attr.y1]="umbralY" [attr.y2]="umbralY" />
+          <text class="etq-ref" x="6" [attr.y]="umbralY - 6">{{ etiquetaUmbral }}</text>
+        </ng-container>
+
+        <path class="linea" [attr.d]="path" />
+        <circle
+          *ngFor="let p of marcas"
+          class="marca fuera"
+          [attr.cx]="p.x"
+          [attr.cy]="p.y"
+          r="4"
+        />
+        <ng-container *ngIf="ultimo as u">
+          <circle class="marca" [class.fuera]="u.fuera" [attr.cx]="u.x" [attr.cy]="u.y" r="4" />
+          <text class="etq-fin" [attr.x]="w + 8" [attr.y]="u.y" dy="0.32em">
+            {{ formato(u.valor) }}
+          </text>
+        </ng-container>
+
+        <ng-container *ngIf="activo as p">
+          <line class="cruz" [attr.x1]="p.x" [attr.x2]="p.x" y1="0" [attr.y2]="h" />
+          <circle
+            class="marca activa"
+            [class.fuera]="p.fuera"
+            [attr.cx]="p.x"
+            [attr.cy]="p.y"
+            r="5"
+          />
+        </ng-container>
+
+        <rect
+          class="captura"
+          x="0"
+          y="0"
+          [attr.width]="w"
+          [attr.height]="h"
+          tabindex="0"
+          [attr.aria-label]="descripcion + '. Use las flechas para recorrer los valores.'"
+          (pointermove)="mover($event)"
+          (pointerleave)="marcar(null)"
+          (keydown)="teclado($event)"
+          (blur)="marcar(null)"
+        />
+      </ng-container>
+    </g>
+  </svg>
+
+  <div
+    *ngIf="activo as p"
+    class="tooltip"
+    [class.izquierda]="p.x > w * 0.65"
+    [class.derecha]="p.x < w * 0.35"
+    [style.left.px]="m.left + p.x"
+  >
+    <div class="tt-valor">
+      <strong>{{ formato(p.valor) }}</strong>
+      <span *ngIf="p.fuera" class="tt-estado">⚠ Fuera de rango</span>
+    </div>
+    <div class="tt-sec">{{ p.fecha | date: 'dd/MM/yyyy HH:mm' }}</div>
+    <div *ngIf="p.detalle" class="tt-sec">{{ p.detalle }}</div>
+  </div>
+
+  <p *ngIf="!vistaPuntos.length" class="sin-datos">Sin datos en el período.</p>
+</div>

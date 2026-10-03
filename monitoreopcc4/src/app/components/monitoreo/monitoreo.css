@@ -1,0 +1,166 @@
+.monitoreo-container {
+    min-height: 100vh;
+    background-color: #f4f6f9;
+  }
+  
+  .content {
+    max-width: 900px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+  }
+  
+  .card {
+    background: white;
+    padding: 2rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  }
+  
+  .subtitle {
+    color: #7f8c8d;
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .form-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  
+  .form-row .form-group {
+    flex: 1 1 200px;
+  }
+  
+  .form-group {
+    margin-bottom: 1.25rem;
+  }
+  
+  label {
+    display: block;
+    margin-bottom: 0.4rem;
+    font-weight: 500;
+    color: #34495e;
+  }
+  
+  input,
+textarea,
+select {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #dcdde1;
+    border-radius: 6px;
+    font-size: 1rem;
+    box-sizing: border-box;
+  }
+  
+  input:focus,
+textarea:focus,
+select:focus {
+    outline: none;
+    border-color: #3498db;
+  }
+  
+  .btn-primary {
+    width: 100%;
+    padding: 0.75rem;
+    background-color: #27ae60;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 1rem;
+  }
+  
+  .btn-primary:hover:not(:disabled) {
+    background-color: #219150;
+  }
+  
+  .btn-primary:disabled {
+    background-color: #bdc3c7;
+    cursor: not-allowed;
+  }
+  
+  .alert {
+    padding: 0.75rem;
+    border-radius: 6px;
+    margin-top: 1rem;
+    font-size: 0.9rem;
+    text-align: center;
+  }
+  
+  .success-alert {
+    background-color: #d4edda;
+    color: #155724;
+  }
+  
+  .error-alert {
+    background-color: #f8d7da;
+    color: #721c24;
+  }
+  .seccion {
+    border: 1px solid #dcdde1;
+    border-radius: 8px;
+    padding: 1rem;
+    margin: 0 0 1.25rem;
+  }
+
+  .seccion legend {
+    font-weight: 600;
+    color: #34495e;
+    padding: 0 0.4rem;
+  }
+
+  .quemadores {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    gap: 0.75rem;
+  }
+
+  .quemadores .form-group {
+    margin-bottom: 0;
+  }
+
+  .nota {
+    margin: 0 0 0.75rem;
+    font-size: 0.85rem;
+    color: #c0392b;
+  }
+
+  .rango {
+    font-weight: 400;
+    font-size: 0.85rem;
+    color: #7f8c8d;
+  }
+
+  .desvio input,
+.desvio textarea,
+.seccion.desvio {
+    border-color: #e74c3c;
+    background-color: #fdf2f2;
+  }
+
+  .aviso,
+.obligatorio {
+    color: #c0392b;
+    font-size: 0.85rem;
+    font-weight: 500;
+  }
+
+  .aviso {
+    margin: 0.4rem 0 0;
+  }
+
+input.bajo {
+  border-color: #e67e22;
+  background: #fff8f0;
+}
+
+.bajo-texto {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  color: #a04000;
+}

@@ -1,0 +1,248 @@
+<div class="dashboard">
+  <app-encabezado class="no-imprimir" titulo="Dashboard · PCC N°4"></app-encabezado>
+
+  <main class="content">
+    <!-- Filtros: una sola fila, arriba de todo lo que afectan -->
+    <div class="filtros no-imprimir">
+      <div class="periodo">
+        <div class="rangos" role="group" aria-label="Período">
+          <button
+            *ngFor="let r of rangos"
+            type="button"
+            class="rango"
+            [class.activo]="dias === r.dias"
+            [attr.aria-pressed]="dias === r.dias"
+            [disabled]="!cargado"
+            (click)="elegirRango(r.dias)"
+          >
+            {{ r.nombre }}
+          </button>
+        </div>
+        <div class="fechas">
+          <label>
+            Desde
+            <input
+              type="date"
+              [(ngModel)]="periodo.desde"
+              (ngModelChange)="cambiarFechas()"
+              [max]="periodo.hasta || null"
+              [disabled]="!cargado"
+            />
+          </label>
+          <label>
+            Hasta
+            <input
+              type="date"
+              [(ngModel)]="periodo.hasta"
+              (ngModelChange)="cambiarFechas()"
+              [min]="periodo.desde || null"
+              [disabled]="!cargado"
+            />
+          </label>
+        </div>
+      </div>
+      <div class="botones">
+        <button class="btn-pdf" (click)="generarPdf()" [disabled]="!resumen || loading">
+          Generar reporte PDF
+        </button>
+        <button class="btn-primary" (click)="cargar()" [disabled]="loading">
+          {{ loading ? 'Cargando...' : cargado ? 'Actualizar' : 'Ver dashboard' }}
+        </button>
+      </div>
+    </div>
+
+    <div *ngIf="mensajeError" class="alert error-alert">{{ mensajeError }}</div>
+
+    <p *ngIf="!cargado && !loading" class="vacio">
+      Tocá <strong>Ver dashboard</strong> para leer la planilla (puede pedir autorización de
+      Google).
+    </p>
+
+    <div *ngIf="resumen as r" class="cuerpo" [class.refrescando]="loading">
+      <!-- Encabezado del reporte (sólo en el PDF) -->
+      <header class="reporte-cabecera solo-imprimir">
+        <div>
+          <h1>Temperatura de Horno · PCC N°4</h1>
+          <p>Reporte de controles — VR PR FO T 007</p>
+        </div>
+        <dl>
+          <div>
+            <dt>Período</dt>
+            <dd>{{ textoPeriodo }}</dd>
+          </div>
+          <div>
+            <dt>Generado</dt>
+            <dd>{{ generadoEl | date: 'dd/MM/yyyy HH:mm' }}</dd>
+          </div>
+          <div *ngIf="usuario">
+            <dt>Por</dt>
+            <dd>{{ usuario }}</dd>
+          </div>
+        </dl>
+      </header>
+      <p class="periodo-texto no-imprimir">Mostrando {{ textoPeriodo }}.</p>
+
+      <!-- KPIs -->
+      <section class="kpis">
+        <div class="kpi kpi-hero">
+          <span class="kpi-label">Cumplimiento del PCC</span>
+          <span class="hero">{{
+            r.cumplimiento == null ? '–' : (r.cumplimiento | number: '1.0-0') + '%'
+          }}</span>
+          <span class="kpi-sec">controles sin desvío</span>
+        </div>
+        <div class="kpi">
+          <span class="kpi-label">Controles</span>
+          <span class="kpi-valor">{{ r.controles | number }}</span>
+          <span class="kpi-sec">en el período</span>
+        </div>
+        <div class="kpi">
+          <span class="kpi-label">Desvíos</span>
+          <span class="kpi-valor">{{ r.desvios | number }}</span>
+          <span *ngIf="r.desvios > 0" class="estado estado-critico"
+            >⚠ Requieren acción correctiva</span
+          >
+          <span *ngIf="r.desvios === 0 && r.controles > 0" class="estado estado-bueno"
+            >✓ Sin desvíos</span
+          >
+        </div>
+        <div class="kpi">
+          <span class="kpi-label">Último control</span>
+          <ng-container *ngIf="r.ultimo as u; else sinUltimo">
+            <span class="kpi-valor kpi-fecha">{{ u.cuando | date: 'dd/MM HH:mm' }}</span>
+            <span class="kpi-sec">{{ u.responsable || 'Sin responsable' }}</span>
+            <span *ngIf="u.desvio" class="estado estado-critico">⚠ Con desvío</span>
+          </ng-container>
+          <ng-template #sinUltimo><span class="kpi-valor">–</span></ng-template>
+        </div>
+      </section>
+
+      <!-- Gráficos -->
+      <section class="grilla">
+        <article class="card ancho">
+          <h2>Temperatura del mejor par de quemadores consecutivos</h2>
+          <p class="sub">
+            El PCC se cumple si dos quemadores seguidos alcanzan
+            {{ limites.temperaturaMinQuemador }}°C. Puntos rojos: no cumple.
+          </p>
+          <app-grafico-linea
+            [puntos]="r.linea.par"
+            unidad="°C"
+            [decimales]="0"
+            [umbral]="limites.temperaturaMinQuemador"
+            [etiquetaUmbral]="'Mínimo ' + limites.temperaturaMinQuemador + '°C'"
+            descripcion="Temperatura del mejor par de quemadores consecutivos por control"
+          />
+        </article>
+
+        <article class="card">
+          <h2>Velocidad de banda</h2>
+          <p class="sub">
+            Franja verde: rango aceptable ({{ limites.velocidad.min | number: '1.2-2' }} –
+            {{ limites.velocidad.max | number: '1.1-2' }}). Puntos rojos: fuera de rango.
+          </p>
+          <app-grafico-linea
+            [puntos]="r.linea.velocidad"
+            [decimales]="2"
+            [banda]="limites.velocidad"
+            descripcion="Velocidad de banda por control"
+          />
+        </article>
+
+        <article class="card">
+          <h2>Altura de cámara</h2>
+          <p class="sub">
+            Franja verde: rango aceptable ({{ limites.altura.min }} – {{ limites.altura.max }} cm).
+            Puntos rojos: fuera de rango.
+          </p>
+          <app-grafico-linea
+            [puntos]="r.linea.altura"
+            unidad=" cm"
+            [decimales]="1"
+            [banda]="limites.altura"
+            descripcion="Altura de cámara por control"
+          />
+        </article>
+
+        <article class="card">
+          <h2>Controles por día</h2>
+          <p class="sub">En rango y con desvío</p>
+          <app-grafico-columnas
+            [series]="seriesDia"
+            [categorias]="r.porDia"
+            descripcion="Cantidad de controles por día, en rango y con desvío"
+          />
+        </article>
+
+        <article class="card">
+          <h2>Lecturas ≥ {{ limites.temperaturaMinQuemador }}°C por quemador</h2>
+          <p class="sub">
+            Porcentaje de controles en que cada quemador alcanzó la temperatura mínima
+          </p>
+          <app-grafico-columnas
+            [series]="seriesQuemador"
+            [categorias]="r.porQuemador"
+            unidad="%"
+            [maximo]="100"
+            [valorEnTope]="true"
+            descripcion="Porcentaje de lecturas de cada quemador que alcanzaron la temperatura mínima"
+          />
+        </article>
+      </section>
+
+      <!-- Detalle de controles (sólo en el PDF) -->
+      <section class="reporte-detalle solo-imprimir">
+        <h2>Detalle de controles ({{ r.controles }})</h2>
+        <table *ngIf="r.detalle.length; else sinControles">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Hora set</th>
+              <th>Hora control</th>
+              <th *ngFor="let n of [1, 2, 3, 4, 5, 6]">Q{{ n }}</th>
+              <th>Vel.</th>
+              <th>Alt.</th>
+              <th>Observaciones</th>
+              <th>Acciones correctivas</th>
+              <th>Modificaciones</th>
+              <th>Responsable</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let c of r.detalle" [class.desvio]="c.desvio">
+              <td>{{ c.fecha }}</td>
+              <td>{{ c.horaSet }}</td>
+              <td>{{ c.horaControl }}</td>
+              <td
+                *ngFor="let t of c.quemadores"
+                class="num"
+                [class.bajo]="t != null && t < limites.temperaturaMinQuemador"
+              >
+                {{ t ?? '–' }}
+              </td>
+              <td class="num">{{ c.velocidadBanda ?? '–' }}</td>
+              <td class="num">{{ c.alturaCamara ?? '–' }}</td>
+              <td>{{ c.observaciones }}</td>
+              <td>{{ c.accionesCorrectivas }}</td>
+              <td>{{ c.modificaciones }}</td>
+              <td>{{ c.responsable }}</td>
+              <td>{{ c.desvio ? 'Desvío' : 'OK' }}</td>
+            </tr>
+          </tbody>
+        </table>
+        <ng-template #sinControles><p>No hay controles en el período.</p></ng-template>
+
+        <div class="firmas">
+          <div>Revisó (firma y aclaración)</div>
+          <div>Fecha de revisión</div>
+        </div>
+      </section>
+
+      <p class="pie no-imprimir">
+        ¿Necesitás los valores exactos? Están todos en el
+        <a routerLink="/historial">Historial</a>.
+      </p>
+    </div>
+  </main>
+</div>
