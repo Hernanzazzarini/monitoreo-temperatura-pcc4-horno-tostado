@@ -1,0 +1,120 @@
+<div class="pagina">
+  <app-encabezado titulo="Lotes · Trazabilidad tostado"></app-encabezado>
+
+  <main class="content">
+    <div class="card">
+      <h2>Generar secuencia de lotes</h2>
+      <p class="subtitle">
+        Los lotes se agregan al final de la cola de embolse, en orden correlativo.
+      </p>
+
+      <form [formGroup]="form" (ngSubmit)="generar()">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="cliente">Cliente (código)</label>
+            <input id="cliente" formControlName="cliente" inputmode="numeric" maxlength="2" placeholder="01" />
+          </div>
+          <div class="form-group">
+            <label for="anio">Año</label>
+            <input id="anio" type="number" formControlName="anio" />
+          </div>
+          <div class="form-group">
+            <label for="desde">Desde N°</label>
+            <input id="desde" type="number" formControlName="desde" min="1" max="999" />
+          </div>
+          <div class="form-group">
+            <label for="cantidad">Cantidad</label>
+            <input id="cantidad" type="number" formControlName="cantidad" min="1" [max]="maxLotes" />
+          </div>
+        </div>
+
+        <div class="vista-previa" *ngIf="codigos.length">
+          <span class="etiqueta">Se van a generar:</span>
+          <span class="codigo" *ngFor="let c of codigos">{{ c }}</span>
+        </div>
+        <p class="aviso" *ngIf="pasaDe999">El correlativo no puede pasar de 999.</p>
+
+        <button type="submit" class="btn-primary" [disabled]="!codigos.length || generando">
+          {{ generando ? 'Generando…' : 'Generar ' + (codigos.length || '') + ' lote' + (codigos.length === 1 ? '' : 's') }}
+        </button>
+
+        <div *ngIf="mensajeExito" class="alert success-alert">{{ mensajeExito }}</div>
+        <div *ngIf="mensajeError" class="alert error-alert">{{ mensajeError }}</div>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>Cola de embolse</h2>
+      <p class="subtitle">El primero de la lista es el que se está embolsando.</p>
+
+      <p *ngIf="!cola" class="vacio">Cargando…</p>
+      <p *ngIf="cola && !cola.length" class="vacio">No hay lotes en la cola.</p>
+
+      <table *ngIf="cola?.length" class="tabla">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Lote</th>
+            <th>Estado</th>
+            <th>Unidades</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let l of cola; let i = index">
+            <td>{{ i + 1 }}</td>
+            <td class="codigo">{{ l.codigo }}</td>
+            <td>
+              <span class="estado" [ngClass]="l.estado">
+                {{ l.estado === 'en_curso' ? 'En curso' : 'Pendiente' }}
+              </span>
+            </td>
+            <td>{{ l.unidades }}</td>
+            <td>
+              <button
+                *ngIf="l.estado === 'pendiente' && !l.unidades"
+                type="button"
+                class="btn-link"
+                (click)="quitar(l)"
+              >
+                Quitar
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>Lotes terminados</h2>
+      <p class="subtitle">Lotes de materia prima que formaron cada lote terminado.</p>
+
+      <p *ngIf="!terminados" class="vacio">Cargando…</p>
+      <p *ngIf="terminados && !terminados.length" class="vacio">Todavía no se cerró ningún lote.</p>
+
+      <table *ngIf="terminados?.length" class="tabla">
+        <thead>
+          <tr>
+            <th>Lote</th>
+            <th>Período</th>
+            <th>Unidades</th>
+            <th>Lotes de materia prima</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let l of terminados">
+            <td class="codigo">
+              <a routerLink="/trazabilidad" [queryParams]="{ lote: l.codigo }">{{ l.codigo }}</a>
+            </td>
+            <td>{{ l.inicio | date: 'dd/MM HH:mm' }} – {{ l.fin | date: 'HH:mm' }}</td>
+            <td>{{ l.unidades }}</td>
+            <td>
+              <span *ngIf="!lotesMp(l).length" class="sin-mp">Sin materia prima registrada</span>
+              <span class="mp" *ngFor="let mp of lotesMp(l)">{{ mp }}</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+</div>

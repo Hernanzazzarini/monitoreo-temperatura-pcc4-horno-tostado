@@ -18,7 +18,7 @@ describe('EncabezadoComponent', () => {
   let fixture: ComponentFixture<EncabezadoComponent>;
   let notificacionesMock: any;
 
-  async function crear(admin: boolean) {
+  async function crear(rol: 'admin' | 'encargada' | 'operador') {
     notificacionesMock = {
       alertas$: of([ALERTA]),
       noLeidas$: of(1),
@@ -35,7 +35,7 @@ describe('EncabezadoComponent', () => {
           provide: AuthService,
           useValue: {
             user$: of({ email: 'admin@x.com' }),
-            isAdmin: () => of(admin),
+            rol: () => of(rol),
             logout: () => of(),
           },
         },
@@ -49,19 +49,34 @@ describe('EncabezadoComponent', () => {
   }
 
   it('shows the signed-in email and the admin link only for admins', async () => {
-    await crear(true);
+    await crear('admin');
     const el = fixture.nativeElement as HTMLElement;
     expect(el.textContent).toContain('admin@x.com');
     expect(el.textContent).toContain('Gestión de Usuarios');
   });
 
   it('hides the admin link for operators', async () => {
-    await crear(false);
+    await crear('operador');
     expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Gestión de Usuarios');
   });
 
+  it('shows the Lotes link to encargada but not to operators', async () => {
+    await crear('encargada');
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.textContent).toContain('Lotes');
+    expect(el.textContent).not.toContain('Gestión de Usuarios');
+  });
+
+  it('shows Inyección MP and Embolse but not Lotes to operators', async () => {
+    await crear('operador');
+    const enlaces = [...(fixture.nativeElement as HTMLElement).querySelectorAll('.btn-nav')];
+    const textos = enlaces.map((a) => a.textContent?.trim());
+    expect(textos).not.toContain('Lotes');
+    expect(textos).toEqual(expect.arrayContaining(['Inyección MP', 'Embolse']));
+  });
+
   it('shows the unread badge and marks alerts as read when opened', async () => {
-    await crear(false);
+    await crear('operador');
     const el = fixture.nativeElement as HTMLElement;
     expect(el.querySelector('.badge')?.textContent?.trim()).toBe('1');
 

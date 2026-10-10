@@ -12,8 +12,10 @@ import {
 import { Firestore, doc, getDoc, setDoc } from '@angular/fire/firestore';
 import { deleteApp, initializeApp } from 'firebase/app';
 import { createUserWithEmailAndPassword, getAuth } from 'firebase/auth';
-import { Observable, from, switchMap } from 'rxjs';
+import { Observable, from, map, switchMap } from 'rxjs';
 import { environment } from '../../environments/environment';
+
+export type Rol = 'admin' | 'encargada' | 'operador';
 
 const SHEETS_SCOPE = 'https://www.googleapis.com/auth/spreadsheets';
 // Los tokens de Google duran 1 hora; renovamos un poco antes
@@ -37,6 +39,11 @@ export class AuthService {
   // Iniciar sesión con correo y contraseña
   login(email: string, pass: string): Observable<any> {
     return from(signInWithEmailAndPassword(this.auth, email, pass));
+  }
+
+  // Correo del usuario conectado ('' si no hay sesión)
+  emailActual(): string {
+    return this.auth.currentUser?.email ?? '';
   }
 
   // Cerrar sesión
@@ -86,22 +93,26 @@ export class AuthService {
     this.googleTokenExpira = 0;
   }
 
-  // Verificar si el usuario actual es administrador consultando Firestore
-  isAdmin(): Observable<boolean> {
+  // Rol del usuario actual según su documento en Firestore (null si no hay sesión o documento)
+  rol(): Observable<Rol | null> {
     return this.user$.pipe(
       switchMap(async (user) => {
-        if (!user) return false;
-        
-        const userRef = doc(this.firestore, `users/${user.uid}`);
-        const userSnap = await getDoc(userRef);
-        
-        if (userSnap.exists()) {
-          const data = userSnap.data();
-          return data['role'] === 'admin';
-        }
-        return false;
+        if (!user) return null;
+
+        const userSnap = await getDoc(doc(this.firestore, `users/${user.uid}`));
+        return userSnap.exists() ? (userSnap.data()['role'] as Rol) : null;
       })
     );
+  }
+
+  // Verificar si el usuario actual es administrador consultando Firestore
+  isAdmin(): Observable<boolean> {
+    return this.rol().pipe(map((rol) => rol === 'admin'));
+  }
+
+  // Admin y encargada generan las secuencias de lotes
+  puedeGenerarLotes(): Observable<boolean> {
+    return this.rol().pipe(map((rol) => rol === 'admin' || rol === 'encargada'));
   }
 
   /**
@@ -109,7 +120,7 @@ export class AuthService {
    * createUserWithEmailAndPassword inicia sesión con la cuenta creada, así que se usa una
    * instancia secundaria de Firebase que se descarta al terminar.
    */
-  async crearUsuario(email: string, pass: string, role: 'admin' | 'operador'): Promise<string> {
+  async crearUsuario(email: string, pass: string, role: Rol): Promise<string> {
     const appSecundaria = initializeApp(environment.firebase, `alta-usuario-${Date.now()}`);
     try {
       const authSecundaria = getAuth(appSecundaria);

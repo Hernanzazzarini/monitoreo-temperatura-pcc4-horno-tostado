@@ -1,0 +1,64 @@
+<div class="pagina">
+  <app-encabezado titulo="Inyección MP · Tolva"></app-encabezado>
+
+  <main class="content">
+    <div class="card">
+      <h2>Cargar envase en la tolva</h2>
+      <p class="subtitle">
+        Lote en curso:
+        <strong class="codigo">{{ loteEnCurso?.codigo ?? 'ninguno' }}</strong>
+      </p>
+
+      <form [formGroup]="form" (ngSubmit)="registrar()">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="lote-mp">N° Lote MP</label>
+            <input id="lote-mp" formControlName="loteMp" autocomplete="off" />
+          </div>
+          <div class="form-group">
+            <label for="envase">N° Envase</label>
+            <input id="envase" formControlName="envase" autocomplete="off" />
+          </div>
+          <div class="form-group">
+            <label for="proveedor">Proveedor (opcional)</label>
+            <input id="proveedor" formControlName="proveedor" />
+          </div>
+        </div>
+
+        <button type="submit" class="btn-primary" [disabled]="form.invalid || guardando">
+          {{ guardando ? 'Registrando…' : 'Registrar envase' }}
+        </button>
+
+        <div *ngIf="mensajeExito" class="alert success-alert">{{ mensajeExito }}</div>
+        <div *ngIf="mensajeError" class="alert error-alert">{{ mensajeError }}</div>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>Últimos envases cargados</h2>
+      <p *ngIf="!ultimas" class="vacio">Cargando…</p>
+      <p *ngIf="ultimas && !ultimas.length" class="vacio">Todavía no se cargaron envases.</p>
+
+      <table *ngIf="ultimas?.length" class="tabla">
+        <thead>
+          <tr>
+            <th>Fecha y hora</th>
+            <th>Lote MP</th>
+            <th>Envase</th>
+            <th>Proveedor</th>
+            <th>Lote en curso</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let i of ultimas">
+            <td>{{ i.fecha | date: 'dd/MM HH:mm' }}</td>
+            <td>{{ i.loteMp }}</td>
+            <td>{{ i.envase }}</td>
+            <td>{{ i.proveedor }}</td>
+            <td class="codigo">{{ i.loteEnCurso }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+</div>

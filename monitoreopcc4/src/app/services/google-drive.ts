@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
-import { Observable, map } from 'rxjs';
+import { Observable, map, switchMap, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
 
 // Planilla "TEMPERATURA DE HORNO - PCC N°4": columnas A (Fecha) a O (Responsable)
@@ -72,6 +72,54 @@ export class GoogleDriveService {
     return this.http
       .get<{ values?: unknown[][] }>(url, { headers })
       .pipe(map((res) => (res.values ?? []).filter(esFilaDeControl).map(filaARegistro)));
+  }
+
+  // Solapas que ya se sabe que existen en la planilla (para no consultarlo en cada fila)
+  private solapasExistentes = new Set<string>();
+
+  /**
+   * Agrega una fila al final de una solapa de la misma planilla (Inyeccion_MP, Lotes_Terminados).
+   * Si la solapa no existe, la crea con su fila de encabezado.
+   */
+  agregarFila(
+    accessToken: string,
+    solapa: string,
+    encabezado: string[],
+    fila: (string | number)[],
+  ): Observable<any> {
+    const headers = new HttpHeaders({ Authorization: `Bearer ${accessToken}` });
+    const base = `https://sheets.googleapis.com/v4/spreadsheets/${this.spreadsheetId}`;
+    const rango = encodeURIComponent(`'${solapa}'!A1`);
+    const agregar = (values: (string | number)[][]) =>
+      this.http.post(
+        `${base}/values/${rango}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`,
+        { values },
+        { headers },
+      );
+
+    if (this.solapasExistentes.has(solapa)) return agregar([fila]);
+
+    return this.http
+      .get<{ sheets?: { properties: { title: string } }[] }>(
+        `${base}?fields=sheets.properties.title`,
+        { headers },
+      )
+      .pipe(
+        switchMap((res) => {
+          (res.sheets ?? []).forEach((s) => this.solapasExistentes.add(s.properties.title));
+          if (this.solapasExistentes.has(solapa)) return agregar([fila]);
+          return this.http
+            .post(
+              `${base}:batchUpdate`,
+              { requests: [{ addSheet: { properties: { title: solapa } } }] },
+              { headers },
+            )
+            .pipe(
+              tap(() => this.solapasExistentes.add(solapa)),
+              switchMap(() => agregar([encabezado, fila])),
+            );
+        }),
+      );
   }
 }
 

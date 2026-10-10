@@ -1,0 +1,73 @@
+<div class="pagina">
+  <app-encabezado titulo="Embolse · Trazabilidad tostado"></app-encabezado>
+
+  <main class="content">
+    <p *ngIf="!cola" class="card vacio">Cargando cola de lotes…</p>
+
+    <div *ngIf="cola && !actual" class="card">
+      <h2>No hay lotes en la cola</h2>
+      <p class="vacio">
+        La encargada tiene que generar la secuencia de lotes.
+        <a *ngIf="puedeGenerarLotes" routerLink="/lotes">Generar lotes</a>
+      </p>
+    </div>
+
+    <div *ngIf="actual as lote" class="card panel">
+      <span class="rotulo">Lote en curso</span>
+      <span class="lote codigo">{{ lote.codigo }}</span>
+      <span class="desde" *ngIf="lote.inicio">desde las {{ lote.inicio | date: 'HH:mm' }}</span>
+
+      <div class="contador" aria-live="polite">
+        <span class="numero">{{ lote.unidades }}</span>
+        <span class="rotulo">unidades</span>
+      </div>
+
+      <button type="button" class="btn-mas" (click)="sumar(1)">+1</button>
+
+      <div class="acciones">
+        <button type="button" class="btn-menos" (click)="sumar(-1)" [disabled]="!lote.unidades">
+          −1 corregir
+        </button>
+        <button
+          type="button"
+          class="btn-cerrar"
+          [class.confirmar]="confirmando"
+          (click)="cerrar()"
+          [disabled]="cerrando"
+        >
+          {{ cerrando ? 'Cerrando…' : confirmando ? 'Tocar de nuevo para cerrar' : 'Finalizar / Cerrar lote' }}
+        </button>
+      </div>
+
+      <div *ngIf="mensajeExito" class="alert success-alert">{{ mensajeExito }}</div>
+      <div *ngIf="mensajeError" class="alert error-alert">{{ mensajeError }}</div>
+    </div>
+
+    <div *ngIf="actual" class="card">
+      <h2>Próximos lotes</h2>
+      <p *ngIf="!siguientes.length" class="vacio">Es el último lote de la cola.</p>
+      <div class="proximos">
+        <span class="codigo" *ngFor="let l of siguientes">{{ l.codigo }}</span>
+      </div>
+    </div>
+
+    <div *ngIf="sinRespaldo.length" class="card">
+      <h2>Pendientes de respaldo</h2>
+      <p class="subtitle">Lotes cerrados que todavía no se enviaron a la solapa Lotes_Terminados.</p>
+      <table class="tabla">
+        <tbody>
+          <tr *ngFor="let l of sinRespaldo">
+            <td class="codigo">{{ l.codigo }}</td>
+            <td>{{ l.unidades }} u.</td>
+            <td>cerrado {{ l.fin | date: 'dd/MM HH:mm' }}</td>
+            <td>
+              <button type="button" class="btn-link" (click)="reintentar(l)" [disabled]="estaRespaldando(l)">
+                {{ estaRespaldando(l) ? 'Enviando…' : 'Reintentar' }}
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+</div>

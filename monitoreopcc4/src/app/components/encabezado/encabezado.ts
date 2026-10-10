@@ -2,21 +2,25 @@ import { Component, DestroyRef, ElementRef, HostListener, Input, OnInit, inject 
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
-import { AuthService } from '../../services/auth';
+import { AuthService, Rol } from '../../services/auth';
 import { describirErrorGoogle } from '../../services/google-drive';
 import { Alerta, NotificacionesService } from '../../services/notificaciones';
 
 interface Enlace {
   ruta: string;
   texto: string;
-  soloAdmin?: boolean;
+  roles?: Rol[]; // sin roles: visible para todos
 }
 
 const ENLACES: Enlace[] = [
   { ruta: '/monitoreo', texto: 'Nuevo control' },
   { ruta: '/historial', texto: 'Historial' },
   { ruta: '/dashboard', texto: 'Dashboard' },
-  { ruta: '/admin-usuarios', texto: 'Gestión de Usuarios', soloAdmin: true },
+  { ruta: '/lotes', texto: 'Lotes', roles: ['admin', 'encargada'] },
+  { ruta: '/inyeccion-mp', texto: 'Inyección MP' },
+  { ruta: '/embolse', texto: 'Embolse' },
+  { ruta: '/trazabilidad', texto: 'Dashboard Trazabilidad' },
+  { ruta: '/admin-usuarios', texto: 'Gestión de Usuarios', roles: ['admin'] },
 ];
 
 /** Encabezado común: título, usuario conectado, navegación, notificaciones y cierre de sesión. */
@@ -37,7 +41,7 @@ export class EncabezadoComponent implements OnInit {
   @Input() titulo = '';
 
   email = '';
-  isAdmin = false;
+  rol: Rol | null = null;
   alertas: Alerta[] | null = null;
   noLeidas = 0;
   abierto = false;
@@ -50,7 +54,7 @@ export class EncabezadoComponent implements OnInit {
     this.authService.user$
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((user) => (this.email = user?.email ?? ''));
-    this.authService.isAdmin().subscribe((admin) => (this.isAdmin = admin));
+    this.authService.rol().subscribe((rol) => (this.rol = rol));
     this.notificaciones.alertas$
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((alertas) => (this.alertas = alertas));
@@ -63,7 +67,9 @@ export class EncabezadoComponent implements OnInit {
 
   get enlaces(): Enlace[] {
     const actual = this.router.url.split('?')[0];
-    return ENLACES.filter((e) => e.ruta !== actual && (!e.soloAdmin || this.isAdmin));
+    return ENLACES.filter(
+      (e) => e.ruta !== actual && (!e.roles || (this.rol != null && e.roles.includes(this.rol))),
+    );
   }
 
   get permiso() {

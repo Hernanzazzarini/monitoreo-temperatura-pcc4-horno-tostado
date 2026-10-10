@@ -20,6 +20,7 @@
               <label for="nuevo-rol">Rol</label>
               <select id="nuevo-rol" formControlName="role">
                 <option value="operador">Operador</option>
+                <option value="encargada">Encargada</option>
                 <option value="admin">Administrador</option>
               </select>
             </div>
@@ -56,7 +57,7 @@
             <tr *ngFor="let u of usuarios">
               <td>{{ u.email }}</td>
               <td>
-                <span class="badge" [ngClass]="u.role === 'admin' ? 'badge-admin' : 'badge-operator'">
+                <span class="badge" [ngClass]="'badge-' + u.role">
                   {{ u.role }}
                 </span>
               </td>

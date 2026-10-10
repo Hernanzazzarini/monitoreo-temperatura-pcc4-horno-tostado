@@ -1,0 +1,242 @@
+<div class="pagina">
+  <app-encabezado class="no-imprimir" titulo="Dashboard Trazabilidad · Tostado"></app-encabezado>
+
+  <main class="content ancho">
+    <!-- Filtros: una sola fila, arriba de todo lo que afectan -->
+    <div class="card filtros no-imprimir">
+      <div class="form-group">
+        <label for="f-lote">Lote</label>
+        <input
+          id="f-lote"
+          [(ngModel)]="filtro.texto"
+          (ngModelChange)="aplicarFiltro()"
+          placeholder="RT01001H26 o parte del código"
+          list="codigos-lote"
+          autocomplete="off"
+        />
+        <datalist id="codigos-lote">
+          <option *ngFor="let l of lotes" [value]="l.codigo"></option>
+        </datalist>
+      </div>
+      <div class="form-group">
+        <label for="f-cliente">Cliente</label>
+        <select id="f-cliente" [(ngModel)]="filtro.cliente" (ngModelChange)="aplicarFiltro()">
+          <option value="">Todos</option>
+          <option *ngFor="let c of clientes" [value]="c">{{ c }}</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="f-desde">Desde</label>
+        <input id="f-desde" type="date" [(ngModel)]="filtro.desde" (ngModelChange)="aplicarFiltro()" />
+      </div>
+      <div class="form-group">
+        <label for="f-hasta">Hasta</label>
+        <input id="f-hasta" type="date" [(ngModel)]="filtro.hasta" (ngModelChange)="aplicarFiltro()" />
+      </div>
+      <div class="botones">
+        <button type="button" class="btn-link" (click)="limpiarFiltro()">Limpiar</button>
+        <button type="button" class="btn-link" (click)="cargarLotes()" [disabled]="cargandoLotes">
+          {{ cargandoLotes ? 'Actualizando…' : 'Actualizar' }}
+        </button>
+      </div>
+    </div>
+
+    <div *ngIf="errorLotes" class="alert error-alert">{{ errorLotes }}</div>
+
+    <div class="cuerpo">
+      <!-- Lista de lotes -->
+      <aside class="card lista no-imprimir">
+        <h2>Lotes</h2>
+        <p class="subtitle">{{ filtrados.length }} {{ filtrados.length === 1 ? 'lote' : 'lotes' }}</p>
+        <p *ngIf="!lotes" class="vacio">Cargando…</p>
+        <p *ngIf="lotes && !filtrados.length" class="vacio">Ningún lote coincide con el filtro.</p>
+        <button
+          *ngFor="let l of filtrados"
+          type="button"
+          class="item"
+          [class.activo]="l === seleccionado"
+          (click)="seleccionar(l)"
+        >
+          <span class="codigo">{{ l.codigo }}</span>
+          <span class="item-sec">
+            {{ l.inicio | date: 'dd/MM HH:mm' }} ·
+            {{ l.estado === 'cerrado' ? l.unidades + ' u.' : 'en curso' }}
+          </span>
+        </button>
+      </aside>
+
+      <!-- Detalle del lote -->
+      <section *ngIf="seleccionado as l" class="detalle">
+        <header class="card cabecera">
+          <div>
+            <span class="rotulo">Lote</span>
+            <h2 class="codigo grande">{{ l.codigo }}</h2>
+            <p class="subtitle">
+              Cliente {{ l.cliente }} · {{ l.inicio | date: 'dd/MM/yyyy HH:mm' }} –
+              {{ l.fin ? (l.fin | date: 'dd/MM/yyyy HH:mm') : 'en curso' }}
+              <span *ngIf="l.cerradoPor"> · cerró {{ l.cerradoPor }}</span>
+            </p>
+          </div>
+          <button type="button" class="btn-pdf no-imprimir" (click)="generarPdf()">
+            Reporte PDF del lote
+          </button>
+        </header>
+
+        <div class="kpis">
+          <div class="card kpi">
+            <span class="rotulo">Unidades</span>
+            <span class="valor">{{ l.unidades | number }}</span>
+          </div>
+          <div class="card kpi">
+            <span class="rotulo">Duración</span>
+            <span class="valor">{{ duracion }}</span>
+          </div>
+          <div class="card kpi">
+            <span class="rotulo">Lotes MP</span>
+            <span class="valor">{{ materiaPrima ? lotesMp.length : '…' }}</span>
+            <span class="sec">{{ materiaPrima?.length ?? 0 }} envases</span>
+          </div>
+          <div class="card kpi">
+            <span class="rotulo">Controles horno</span>
+            <span class="valor">{{ registros ? controles.length : '–' }}</span>
+            <span *ngIf="registros && desvios" class="estado-critico">⚠ {{ desvios }} con desvío</span>
+            <span *ngIf="registros && controles.length && !desvios" class="estado-bueno">✓ Sin desvíos</span>
+          </div>
+        </div>
+
+        <!-- Materia prima -->
+        <div class="card">
+          <h2>Materia prima del lote</h2>
+          <p class="subtitle">
+            Envases cargados en la tolva durante el lote, más el que ya estaba al empezar.
+          </p>
+          <p *ngIf="!materiaPrima" class="vacio">Cargando…</p>
+          <p *ngIf="materiaPrima && !materiaPrima.length" class="vacio sin">
+            Sin materia prima registrada para este lote.
+          </p>
+          <table *ngIf="materiaPrima?.length" class="tabla">
+            <thead>
+              <tr>
+                <th>Fecha y hora</th>
+                <th>N° Lote MP</th>
+                <th>N° Envase</th>
+                <th>Proveedor</th>
+                <th>Responsable</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let i of materiaPrima">
+                <td>
+                  {{ i.fecha | date: 'dd/MM HH:mm' }}
+                  <span *ngIf="l.inicio && i.fecha < l.inicio" class="previo">ya en tolva</span>
+                </td>
+                <td class="codigo">{{ i.loteMp }}</td>
+                <td>{{ i.envase }}</td>
+                <td>{{ i.proveedor || '–' }}</td>
+                <td>{{ i.responsable }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Horno -->
+        <div class="card">
+          <h2>Temperatura del horno durante el lote</h2>
+          <p class="subtitle">
+            Controles desde el inicio hasta el cierre del lote, más el vigente al empezar.
+          </p>
+
+          <ng-container *ngIf="!registros">
+            <p class="vacio">Las temperaturas se leen de la planilla de Google.</p>
+            <button type="button" class="btn-primary no-imprimir" (click)="cargarHorno()" [disabled]="cargandoHorno">
+              {{ cargandoHorno ? 'Leyendo planilla…' : 'Cargar temperaturas del horno' }}
+            </button>
+          </ng-container>
+          <div *ngIf="errorHorno" class="alert error-alert">{{ errorHorno }}</div>
+
+          <p *ngIf="registros && !controles.length" class="vacio sin">
+            No hay controles del horno en el período de este lote.
+          </p>
+
+          <ng-container *ngIf="registros && controles.length">
+            <div class="graficos">
+              <article class="ancho-completo">
+                <h3>Mejor par de quemadores consecutivos</h3>
+                <app-grafico-linea
+                  [puntos]="series.par"
+                  unidad="°C"
+                  [umbral]="limites.temperaturaMinQuemador"
+                  [etiquetaUmbral]="'Mínimo ' + limites.temperaturaMinQuemador + '°C'"
+                  descripcion="Temperatura del mejor par de quemadores consecutivos en el lote"
+                />
+              </article>
+              <article>
+                <h3>Velocidad de banda</h3>
+                <app-grafico-linea
+                  [puntos]="series.velocidad"
+                  [decimales]="2"
+                  [banda]="limites.velocidad"
+                  descripcion="Velocidad de banda en el lote"
+                />
+              </article>
+              <article>
+                <h3>Altura de cámara (cm)</h3>
+                <app-grafico-linea
+                  [puntos]="series.altura"
+                  [decimales]="1"
+                  [banda]="limites.altura"
+                  descripcion="Altura de cámara en el lote"
+                />
+              </article>
+            </div>
+
+            <h3>Todos los parámetros</h3>
+            <div class="scroll">
+              <table class="tabla horno">
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Hora set</th>
+                    <th>Hora control</th>
+                    <th *ngFor="let n of numerosQuemador">Q{{ n }} °C</th>
+                    <th>Vel. banda</th>
+                    <th>Altura cm</th>
+                    <th>Estado</th>
+                    <th>Observaciones</th>
+                    <th>Acciones correctivas</th>
+                    <th>Modificaciones</th>
+                    <th>Responsable</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let c of controles" [class.fila-previa]="c.previo">
+                    <td>
+                      {{ c.fecha }}
+                      <span *ngIf="c.previo" class="previo">antes del inicio</span>
+                    </td>
+                    <td>{{ c.horaSet }}</td>
+                    <td>{{ c.horaControl }}</td>
+                    <td *ngFor="let t of c.quemadores" class="num" [class.fuera]="quemadorBajo(t)">
+                      {{ t ?? '–' }}
+                    </td>
+                    <td class="num" [class.fuera]="velocidadFuera(c)">{{ c.velocidadBanda ?? '–' }}</td>
+                    <td class="num" [class.fuera]="alturaFuera(c)">{{ c.alturaCamara ?? '–' }}</td>
+                    <td>
+                      <span *ngIf="c.desvio" class="estado-critico">⚠ Desvío</span>
+                      <span *ngIf="!c.desvio" class="estado-bueno">✓ OK</span>
+                    </td>
+                    <td>{{ c.observaciones }}</td>
+                    <td>{{ c.accionesCorrectivas }}</td>
+                    <td>{{ c.modificaciones }}</td>
+                    <td>{{ c.responsable }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="nota">Valores en rojo: fuera del límite del PCC (quemador &lt; {{ limites.temperaturaMinQuemador }} °C, velocidad {{ limites.velocidad.min }}–{{ limites.velocidad.max }}, altura {{ limites.altura.min }}–{{ limites.altura.max }} cm).</p>
+          </ng-container>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>

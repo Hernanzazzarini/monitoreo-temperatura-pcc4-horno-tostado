@@ -54,7 +54,12 @@
     color: #b91c1c;
   }
   
-  .badge-operator {
+  .badge-encargada {
+    background-color: #fef3c7;
+    color: #92400e;
+  }
+
+  .badge-operador {
     background-color: #e0f2fe;
     color: #0369a1;
   }

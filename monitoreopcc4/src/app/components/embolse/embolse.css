@@ -1,0 +1,102 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.5rem;
+}
+
+.rotulo {
+  color: #7f8c8d;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.lote {
+  font-size: 2rem;
+  color: #2c3e50;
+}
+
+.desde {
+  color: #7f8c8d;
+  font-size: 0.9rem;
+}
+
+.contador {
+  display: flex;
+  flex-direction: column;
+  margin: 0.5rem 0;
+}
+
+.numero {
+  font-size: 4.5rem;
+  font-weight: 700;
+  line-height: 1;
+  color: #2c3e50;
+  font-variant-numeric: tabular-nums;
+}
+
+.btn-mas {
+  width: 100%;
+  min-height: 9rem;
+  font-size: 4rem;
+  font-weight: 700;
+  color: white;
+  background: #27ae60;
+  border: none;
+  border-radius: 14px;
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+}
+
+.btn-mas:active {
+  background: #1e8449;
+  transform: scale(0.99);
+}
+
+.acciones {
+  display: flex;
+  gap: 0.75rem;
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+.acciones button {
+  flex: 1;
+  min-height: 3.5rem;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.btn-menos {
+  background: #ecf0f1;
+  color: #34495e;
+}
+
+.btn-cerrar {
+  background: #2980b9;
+  color: white;
+}
+
+.btn-cerrar.confirmar {
+  background: #c0392b;
+}
+
+.proximos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.proximos .codigo {
+  background: #ecf0f1;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}

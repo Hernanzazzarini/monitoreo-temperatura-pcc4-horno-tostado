@@ -1,0 +1,35 @@
+.vista-previa {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+  margin-bottom: 1rem;
+  max-height: 8rem;
+  overflow-y: auto;
+}
+
+.vista-previa .codigo {
+  background: #eaf2f8;
+  color: #1f4e79;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
+.etiqueta {
+  color: #7f8c8d;
+  font-size: 0.9rem;
+}
+
+.aviso {
+  color: #c0392b;
+  font-size: 0.85rem;
+}
+
+.mp {
+  display: block;
+}
+
+.sin-mp {
+  color: #c0392b;
+}
