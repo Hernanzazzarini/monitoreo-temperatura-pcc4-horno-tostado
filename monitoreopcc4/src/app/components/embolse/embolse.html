@@ -1,53 +1,115 @@
 <div class="pagina">
   <app-encabezado titulo="Embolse · Trazabilidad tostado"></app-encabezado>
 
-  <main class="content">
+  <main class="content ancho">
     <p *ngIf="!cola" class="card vacio">Cargando cola de lotes…</p>
 
-    <div *ngIf="cola && !actual" class="card">
+    <div *ngIf="cola && !cola.length" class="card">
       <h2>No hay lotes en la cola</h2>
       <p class="vacio">
-        La encargada tiene que generar la secuencia de lotes.
-        <a *ngIf="puedeGenerarLotes" routerLink="/lotes">Generar lotes</a>
+        La encargada tiene que programar los lotes.
+        <a *ngIf="puedeGenerarLotes" routerLink="/lotes">Programar lotes</a>
       </p>
     </div>
 
-    <div *ngIf="actual as lote" class="card panel">
-      <span class="rotulo">Lote en curso</span>
-      <span class="lote codigo">{{ lote.codigo }}</span>
-      <span class="desde" *ngIf="lote.inicio">desde las {{ lote.inicio | date: 'HH:mm' }}</span>
+    <div *ngIf="mensajeExito" class="alert success-alert">{{ mensajeExito }}</div>
+    <div *ngIf="mensajeError" class="alert error-alert">{{ mensajeError }}</div>
 
-      <div class="contador" aria-live="polite">
-        <span class="numero">{{ lote.unidades }}</span>
-        <span class="rotulo">unidades</span>
+    <p *ngIf="cola?.length && !enCurso.length" class="card vacio">
+      No hay ningún lote embolsándose. Toque <strong>Iniciar</strong> en un lote programado.
+    </p>
+
+    <!-- Un panel por cada lote en curso (pueden ir varios a la vez) -->
+    <div class="paneles" [class.varios]="enCurso.length > 1">
+      <div *ngFor="let lote of enCurso" class="card panel" [class.completo]="completo(lote)">
+        <span class="rotulo">{{ lote.calibre || 'Lote en curso' }}</span>
+        <span class="lote codigo">{{ lote.codigo }}</span>
+        <span class="desde">
+          {{ lote.cliente }}<span *ngIf="lote.inicio"> · desde las {{ lote.inicio | date: 'HH:mm' }}</span>
+        </span>
+        <div *ngIf="lote.observacion" class="nota-encargada" role="note">
+          <strong>📝 Observación de la encargada:</strong> {{ lote.observacion }}
+        </div>
+
+        <div class="contador" aria-live="polite">
+          <span class="numero">
+            {{ lote.unidades }}<small *ngIf="lote.envases"> / {{ lote.envases }}</small>
+          </span>
+          <span class="rotulo">
+            envases<span *ngIf="lote.kgPorEnvase"> · {{ kgTotales(lote) | number: '1.0-2' }} kg</span>
+          </span>
+        </div>
+        <div *ngIf="lote.envases" class="barra" aria-hidden="true">
+          <span [style.width.%]="avance(lote)"></span>
+        </div>
+        <span *ngIf="completo(lote)" class="aviso-completo">✓ Lote completo — ciérrelo para pasar al siguiente</span>
+
+        <button type="button" class="btn-mas" (click)="sumar(lote, 1)">+1</button>
+
+        <div class="acciones">
+          <button type="button" class="btn-menos" (click)="sumar(lote, -1)" [disabled]="!lote.unidades">
+            −1 corregir
+          </button>
+          <button
+            type="button"
+            class="btn-cerrar"
+            [class.confirmar]="confirmando === lote.codigo"
+            (click)="cerrar(lote)"
+            [disabled]="cerrando === lote.codigo"
+          >
+            {{
+              cerrando === lote.codigo
+                ? 'Cerrando…'
+                : confirmando === lote.codigo
+                  ? 'Tocar de nuevo para cerrar'
+                  : 'Finalizar / Cerrar lote'
+            }}
+          </button>
+        </div>
       </div>
-
-      <button type="button" class="btn-mas" (click)="sumar(1)">+1</button>
-
-      <div class="acciones">
-        <button type="button" class="btn-menos" (click)="sumar(-1)" [disabled]="!lote.unidades">
-          −1 corregir
-        </button>
-        <button
-          type="button"
-          class="btn-cerrar"
-          [class.confirmar]="confirmando"
-          (click)="cerrar()"
-          [disabled]="cerrando"
-        >
-          {{ cerrando ? 'Cerrando…' : confirmando ? 'Tocar de nuevo para cerrar' : 'Finalizar / Cerrar lote' }}
-        </button>
-      </div>
-
-      <div *ngIf="mensajeExito" class="alert success-alert">{{ mensajeExito }}</div>
-      <div *ngIf="mensajeError" class="alert error-alert">{{ mensajeError }}</div>
     </div>
 
-    <div *ngIf="actual" class="card">
-      <h2>Próximos lotes</h2>
-      <p *ngIf="!siguientes.length" class="vacio">Es el último lote de la cola.</p>
-      <div class="proximos">
-        <span class="codigo" *ngFor="let l of siguientes">{{ l.codigo }}</span>
+    <div *ngIf="programados.length" class="card">
+      <h2>Lotes programados</h2>
+      <p class="subtitle">
+        Al cerrar un lote empieza solo el siguiente del mismo calibre. Para embolsar otro lote en
+        paralelo, toque Iniciar.
+      </p>
+      <div class="scroll">
+        <table class="tabla">
+          <thead>
+            <tr>
+              <th>Lote</th>
+              <th>Calibre</th>
+              <th>Cliente</th>
+              <th>Envases</th>
+              <th>Kg/env.</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let l of programados">
+              <td>
+                <span class="codigo">{{ l.codigo }}</span>
+                <span *ngIf="l.observacion" class="obs-fila">📝 {{ l.observacion }}</span>
+              </td>
+              <td>{{ l.calibre || '–' }}</td>
+              <td>{{ l.cliente }}</td>
+              <td>{{ l.envases || '–' }}</td>
+              <td>{{ l.kgPorEnvase || '–' }}</td>
+              <td>
+                <button
+                  type="button"
+                  class="btn-iniciar"
+                  (click)="iniciar(l)"
+                  [disabled]="iniciando === l.codigo"
+                >
+                  {{ iniciando === l.codigo ? 'Iniciando…' : 'Iniciar' }}
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
@@ -58,7 +120,7 @@
         <tbody>
           <tr *ngFor="let l of sinRespaldo">
             <td class="codigo">{{ l.codigo }}</td>
-            <td>{{ l.unidades }} u.</td>
+            <td>{{ l.unidades }} env.</td>
             <td>cerrado {{ l.fin | date: 'dd/MM HH:mm' }}</td>
             <td>
               <button type="button" class="btn-link" (click)="reintentar(l)" [disabled]="estaRespaldando(l)">

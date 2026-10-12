@@ -26,6 +26,13 @@
         </select>
       </div>
       <div class="form-group">
+        <label for="f-calibre">Calibre</label>
+        <select id="f-calibre" [(ngModel)]="filtro.calibre" (ngModelChange)="aplicarFiltro()">
+          <option value="">Todos</option>
+          <option *ngFor="let c of calibres" [value]="c">{{ c }}</option>
+        </select>
+      </div>
+      <div class="form-group">
         <label for="f-desde">Desde</label>
         <input id="f-desde" type="date" [(ngModel)]="filtro.desde" (ngModelChange)="aplicarFiltro()" />
       </div>
@@ -60,8 +67,9 @@
           <span class="codigo">{{ l.codigo }}</span>
           <span class="item-sec">
             {{ l.inicio | date: 'dd/MM HH:mm' }} ·
-            {{ l.estado === 'cerrado' ? l.unidades + ' u.' : 'en curso' }}
+            {{ l.estado === 'cerrado' ? l.unidades + ' env.' : 'en curso' }}
           </span>
+          <span class="item-sec">{{ l.calibre }}<span *ngIf="l.calibre && l.cliente"> · </span>{{ l.cliente }}</span>
         </button>
       </aside>
 
@@ -72,10 +80,12 @@
             <span class="rotulo">Lote</span>
             <h2 class="codigo grande">{{ l.codigo }}</h2>
             <p class="subtitle">
-              Cliente {{ l.cliente }} · {{ l.inicio | date: 'dd/MM/yyyy HH:mm' }} –
+              <span *ngIf="l.calibre">{{ l.calibre }} · </span>Cliente {{ l.cliente || '–' }} ·
+              {{ l.inicio | date: 'dd/MM/yyyy HH:mm' }} –
               {{ l.fin ? (l.fin | date: 'dd/MM/yyyy HH:mm') : 'en curso' }}
               <span *ngIf="l.cerradoPor"> · cerró {{ l.cerradoPor }}</span>
             </p>
+            <p *ngIf="l.observacion" class="nota-encargada">📝 {{ l.observacion }}</p>
           </div>
           <button type="button" class="btn-pdf no-imprimir" (click)="generarPdf()">
             Reporte PDF del lote
@@ -84,8 +94,14 @@
 
         <div class="kpis">
           <div class="card kpi">
-            <span class="rotulo">Unidades</span>
+            <span class="rotulo">Envases</span>
             <span class="valor">{{ l.unidades | number }}</span>
+            <span *ngIf="l.envases" class="sec">de {{ l.envases | number }} programados</span>
+          </div>
+          <div class="card kpi">
+            <span class="rotulo">Kg totales</span>
+            <span class="valor">{{ kgTotales(l) | number: '1.0-2' }}</span>
+            <span *ngIf="l.kgPorEnvase" class="sec">{{ l.kgPorEnvase | number: '1.0-2' }} kg por envase</span>
           </div>
           <div class="card kpi">
             <span class="rotulo">Duración</span>

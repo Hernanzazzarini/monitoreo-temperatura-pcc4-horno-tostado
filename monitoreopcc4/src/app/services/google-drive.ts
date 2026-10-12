@@ -76,10 +76,13 @@ export class GoogleDriveService {
 
   // Solapas que ya se sabe que existen en la planilla (para no consultarlo en cada fila)
   private solapasExistentes = new Set<string>();
+  // Solapas cuya fila de encabezado ya se dejó al día en esta sesión
+  private encabezadosAlDia = new Set<string>();
 
   /**
    * Agrega una fila al final de una solapa de la misma planilla (Inyeccion_MP, Lotes_Terminados).
-   * Si la solapa no existe, la crea con su fila de encabezado.
+   * Si la solapa no existe, la crea con su fila de encabezado; si existe, la primera vez reescribe
+   * la fila 1 con el encabezado actual (por si se agregaron columnas).
    */
   agregarFila(
     accessToken: string,
@@ -97,7 +100,17 @@ export class GoogleDriveService {
         { headers },
       );
 
-    if (this.solapasExistentes.has(solapa)) return agregar([fila]);
+    const alDia = tap(() => {
+      this.solapasExistentes.add(solapa);
+      this.encabezadosAlDia.add(solapa);
+    });
+    const actualizarEncabezado = () =>
+      this.http
+        .put(`${base}/values/${rango}?valueInputOption=RAW`, { values: [encabezado] }, { headers })
+        .pipe(alDia, switchMap(() => agregar([fila])));
+
+    if (this.encabezadosAlDia.has(solapa)) return agregar([fila]);
+    if (this.solapasExistentes.has(solapa)) return actualizarEncabezado();
 
     return this.http
       .get<{ sheets?: { properties: { title: string } }[] }>(
@@ -107,7 +120,7 @@ export class GoogleDriveService {
       .pipe(
         switchMap((res) => {
           (res.sheets ?? []).forEach((s) => this.solapasExistentes.add(s.properties.title));
-          if (this.solapasExistentes.has(solapa)) return agregar([fila]);
+          if (this.solapasExistentes.has(solapa)) return actualizarEncabezado();
           return this.http
             .post(
               `${base}:batchUpdate`,
@@ -115,7 +128,7 @@ export class GoogleDriveService {
               { headers },
             )
             .pipe(
-              tap(() => this.solapasExistentes.add(solapa)),
+              alDia,
               switchMap(() => agregar([encabezado, fila])),
             );
         }),

@@ -1,40 +1,86 @@
 <div class="pagina">
-  <app-encabezado titulo="Lotes · Trazabilidad tostado"></app-encabezado>
+  <app-encabezado titulo="Lotes · Programa de embolse"></app-encabezado>
 
   <main class="content">
     <div class="card">
-      <h2>Generar secuencia de lotes</h2>
+      <h2>Programar lotes</h2>
       <p class="subtitle">
-        Los lotes se agregan al final de la cola de embolse, en orden correlativo.
+        Los lotes se agregan al final de la cola de embolse. Cada calibre sale por separado, así
+        que se pueden embolsar lotes de distintos calibres al mismo tiempo.
       </p>
 
       <form [formGroup]="form" (ngSubmit)="generar()">
         <div class="form-row">
-          <div class="form-group">
-            <label for="cliente">Cliente (código)</label>
-            <input id="cliente" formControlName="cliente" inputmode="numeric" maxlength="2" placeholder="01" />
+          <div class="form-group ancho">
+            <label for="codigo">N° de lote</label>
+            <input
+              id="codigo"
+              formControlName="codigo"
+              placeholder="Ej.: RT01001H26"
+              autocomplete="off"
+              autocapitalize="characters"
+              class="mayusculas"
+            />
+            <button *ngIf="sugerido" type="button" class="btn-link sugerido" (click)="usarSugerido()">
+              Siguiente: {{ sugerido }}
+            </button>
           </div>
           <div class="form-group">
-            <label for="anio">Año</label>
-            <input id="anio" type="number" formControlName="anio" />
-          </div>
-          <div class="form-group">
-            <label for="desde">Desde N°</label>
-            <input id="desde" type="number" formControlName="desde" min="1" max="999" />
-          </div>
-          <div class="form-group">
-            <label for="cantidad">Cantidad</label>
+            <label for="cantidad">Cantidad de lotes</label>
             <input id="cantidad" type="number" formControlName="cantidad" min="1" [max]="maxLotes" />
           </div>
         </div>
 
+        <div class="form-row">
+          <div class="form-group">
+            <label for="calibre">Calibre</label>
+            <select id="calibre" formControlName="calibre">
+              <option value="" disabled>Elegir…</option>
+              <option *ngFor="let c of calibres" [value]="c">{{ c }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="cliente">Cliente</label>
+            <input id="cliente" formControlName="cliente" placeholder="A qué cliente va" />
+          </div>
+          <div class="form-group">
+            <label for="envases">Envases por lote</label>
+            <input id="envases" type="number" formControlName="envases" min="1" inputmode="numeric" />
+          </div>
+          <div class="form-group">
+            <label for="kg">Kg por envase</label>
+            <input id="kg" type="number" formControlName="kgPorEnvase" min="0" step="0.01" inputmode="decimal" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="observacion">Observación para inyección y embolse (opcional)</label>
+          <textarea
+            id="observacion"
+            formControlName="observacion"
+            rows="2"
+            maxlength="500"
+            placeholder="Ej.: usar bolsa con etiqueta nueva, prioridad alta…"
+          ></textarea>
+        </div>
+
         <div class="vista-previa" *ngIf="codigos.length">
           <span class="etiqueta">Se van a generar:</span>
-          <span class="codigo" *ngFor="let c of codigos">{{ c }}</span>
+          <span class="codigo" *ngFor="let c of codigos" [class.repetido]="repetidos.includes(c)">{{ c }}</span>
+          <span class="etiqueta" *ngIf="verificando">verificando…</span>
         </div>
-        <p class="aviso" *ngIf="pasaDe999">El correlativo no puede pasar de 999.</p>
+        <p class="aviso" *ngIf="repetidos.length">
+          ⚠ {{ repetidos.length === 1 ? 'El lote' : 'Los lotes' }} {{ repetidos.join(', ') }}
+          ya {{ repetidos.length === 1 ? 'existe' : 'existen' }}. Los lotes son únicos y no se pueden repetir.
+        </p>
+        <p class="aviso" *ngIf="form.controls.codigo.hasError('pattern')">
+          El N° de lote solo puede tener letras, números, espacios, puntos y guiones (sin "/").
+        </p>
+        <p class="aviso" *ngIf="sinCorrelativo">
+          Para generar varios lotes el N° de lote tiene que tener números.
+        </p>
 
-        <button type="submit" class="btn-primary" [disabled]="!codigos.length || generando">
+        <button type="submit" class="btn-primary" [disabled]="!puedeGenerar">
           {{ generando ? 'Generando…' : 'Generar ' + (codigos.length || '') + ' lote' + (codigos.length === 1 ? '' : 's') }}
         </button>
 
@@ -45,44 +91,67 @@
 
     <div class="card">
       <h2>Cola de embolse</h2>
-      <p class="subtitle">El primero de la lista es el que se está embolsando.</p>
+      <p class="subtitle">
+        Lotes en curso y programados. Al cerrar un lote empieza el siguiente del mismo calibre.
+      </p>
 
       <p *ngIf="!cola" class="vacio">Cargando…</p>
       <p *ngIf="cola && !cola.length" class="vacio">No hay lotes en la cola.</p>
 
-      <table *ngIf="cola?.length" class="tabla">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Lote</th>
-            <th>Estado</th>
-            <th>Unidades</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let l of cola; let i = index">
-            <td>{{ i + 1 }}</td>
-            <td class="codigo">{{ l.codigo }}</td>
-            <td>
-              <span class="estado" [ngClass]="l.estado">
-                {{ l.estado === 'en_curso' ? 'En curso' : 'Pendiente' }}
-              </span>
-            </td>
-            <td>{{ l.unidades }}</td>
-            <td>
-              <button
-                *ngIf="l.estado === 'pendiente' && !l.unidades"
-                type="button"
-                class="btn-link"
-                (click)="quitar(l)"
-              >
-                Quitar
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <div *ngIf="cola?.length" class="scroll">
+        <table class="tabla">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Lote</th>
+              <th>Calibre</th>
+              <th>Cliente</th>
+              <th>Envases</th>
+              <th>Kg/env.</th>
+              <th>Estado</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let l of cola; let i = index">
+              <td>{{ i + 1 }}</td>
+              <td>
+                <span class="codigo">{{ l.codigo }}</span>
+                <ng-container *ngIf="editando !== l.codigo">
+                  <span *ngIf="l.observacion" class="mp observacion">📝 {{ l.observacion }}</span>
+                  <button type="button" class="btn-link mp" (click)="editarObservacion(l)">
+                    {{ l.observacion ? 'Editar observación' : '+ Observación' }}
+                  </button>
+                </ng-container>
+                <div *ngIf="editando === l.codigo" class="editar-obs">
+                  <textarea [(ngModel)]="textoObservacion" rows="2" maxlength="500" aria-label="Observación"></textarea>
+                  <button type="button" class="btn-link" (click)="guardarObservacion(l)">Guardar</button>
+                  <button type="button" class="btn-link" (click)="editando = null">Cancelar</button>
+                </div>
+              </td>
+              <td>{{ l.calibre || '–' }}</td>
+              <td>{{ l.cliente }}</td>
+              <td>{{ l.unidades }} / {{ l.envases || '–' }}</td>
+              <td>{{ l.kgPorEnvase || '–' }}</td>
+              <td>
+                <span class="estado" [ngClass]="l.estado">
+                  {{ l.estado === 'en_curso' ? 'En curso' : 'Programado' }}
+                </span>
+              </td>
+              <td>
+                <button
+                  *ngIf="l.estado === 'pendiente' && !l.unidades"
+                  type="button"
+                  class="btn-link"
+                  (click)="quitar(l)"
+                >
+                  Quitar
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
 
     <div class="card">
@@ -92,29 +161,38 @@
       <p *ngIf="!terminados" class="vacio">Cargando…</p>
       <p *ngIf="terminados && !terminados.length" class="vacio">Todavía no se cerró ningún lote.</p>
 
-      <table *ngIf="terminados?.length" class="tabla">
-        <thead>
-          <tr>
-            <th>Lote</th>
-            <th>Período</th>
-            <th>Unidades</th>
-            <th>Lotes de materia prima</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let l of terminados">
-            <td class="codigo">
-              <a routerLink="/trazabilidad" [queryParams]="{ lote: l.codigo }">{{ l.codigo }}</a>
-            </td>
-            <td>{{ l.inicio | date: 'dd/MM HH:mm' }} – {{ l.fin | date: 'HH:mm' }}</td>
-            <td>{{ l.unidades }}</td>
-            <td>
-              <span *ngIf="!lotesMp(l).length" class="sin-mp">Sin materia prima registrada</span>
-              <span class="mp" *ngFor="let mp of lotesMp(l)">{{ mp }}</span>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <div *ngIf="terminados?.length" class="scroll">
+        <table class="tabla">
+          <thead>
+            <tr>
+              <th>Lote</th>
+              <th>Calibre / Cliente</th>
+              <th>Período</th>
+              <th>Envases</th>
+              <th>Kg</th>
+              <th>Lotes de materia prima</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let l of terminados">
+              <td class="codigo">
+                <a routerLink="/trazabilidad" [queryParams]="{ lote: l.codigo }">{{ l.codigo }}</a>
+              </td>
+              <td>
+                {{ l.calibre || '–' }}
+                <span class="mp etiqueta">{{ l.cliente }}</span>
+              </td>
+              <td>{{ l.inicio | date: 'dd/MM HH:mm' }} – {{ l.fin | date: 'HH:mm' }}</td>
+              <td>{{ l.unidades }}<span *ngIf="l.envases"> / {{ l.envases }}</span></td>
+              <td>{{ kgTotales(l) | number: '1.0-2' }}</td>
+              <td>
+                <span *ngIf="!lotesMp(l).length" class="sin-mp">Sin materia prima registrada</span>
+                <span class="mp" *ngFor="let mp of lotesMp(l)">{{ mp }}</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </main>
 </div>

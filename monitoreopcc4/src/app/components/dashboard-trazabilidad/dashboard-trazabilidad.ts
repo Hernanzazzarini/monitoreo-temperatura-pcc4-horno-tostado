@@ -10,12 +10,15 @@ import { RegistrosService } from '../../services/registros';
 import { TrazabilidadService } from '../../services/trazabilidad';
 import { LIMITES, fueraDeRango, mejorParConsecutivo } from '../../pcc4';
 import {
+  CALIBRES,
   ControlDeLote,
+  FILTRO_VACIO,
   FiltroLotes,
   Inyeccion,
   Lote,
   controlesDeLote,
   filtrarLotes,
+  kgTotales,
   unicos,
 } from '../../trazabilidad';
 
@@ -35,15 +38,17 @@ export class DashboardTrazabilidadComponent implements OnInit {
   private destroyRef = inject(DestroyRef);
 
   readonly numerosQuemador = [1, 2, 3, 4, 5, 6];
+  readonly kgTotales = kgTotales;
   get limites() {
     return LIMITES;
   }
 
   lotes: Lote[] | null = null;
   registros: RegistroHorno[] | null = null;
-  filtro: FiltroLotes = { texto: '', cliente: '', desde: '', hasta: '' };
+  filtro: FiltroLotes = { ...FILTRO_VACIO };
   filtrados: Lote[] = [];
   clientes: string[] = [];
+  calibres: string[] = CALIBRES;
 
   seleccionado: Lote | null = null;
   materiaPrima: Inyeccion[] | null = null;
@@ -88,6 +93,7 @@ export class DashboardTrazabilidadComponent implements OnInit {
     try {
       this.lotes = await this.trazabilidad.obtenerLotes();
       this.clientes = unicos(this.lotes.map((l) => l.cliente)).sort();
+      this.calibres = unicos([...CALIBRES, ...this.lotes.map((l) => l.calibre)]);
       this.aplicarFiltro();
     } catch (err) {
       console.error(err);
@@ -117,7 +123,7 @@ export class DashboardTrazabilidadComponent implements OnInit {
   }
 
   limpiarFiltro(): void {
-    this.filtro = { texto: '', cliente: '', desde: '', hasta: '' };
+    this.filtro = { ...FILTRO_VACIO };
     this.router.navigate([], { queryParams: {} });
     this.aplicarFiltro();
   }

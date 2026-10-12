@@ -30,6 +30,51 @@
   display: block;
 }
 
+.form-row .form-group.ancho {
+  flex: 2 1 220px;
+}
+
+.mayusculas {
+  text-transform: uppercase;
+}
+
+.sugerido {
+  margin-top: 0.35rem;
+}
+
+.scroll {
+  overflow-x: auto;
+}
+
+textarea {
+  width: 100%;
+  padding: 0.6rem;
+  border: 1px solid #dcdde1;
+  border-radius: 6px;
+  font: inherit;
+  box-sizing: border-box;
+}
+
+.vista-previa .codigo.repetido {
+  background: #f8d7da;
+  color: #721c24;
+  text-decoration: line-through;
+}
+
+.observacion {
+  font-size: 0.85rem;
+  color: #7a5c00;
+  margin-top: 0.25rem;
+}
+
+.editar-obs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+  min-width: 220px;
+}
+
 .sin-mp {
   color: #c0392b;
 }

@@ -90,6 +90,24 @@ describe('GoogleDriveService', () => {
     ]);
   });
 
+  it('refreshes the header row of an existing tab once per session', () => {
+    service.agregarFila('t', 'Lotes_Terminados', ['Lote', 'Calibre'], ['L1', 'Split']).subscribe();
+
+    httpMock
+      .expectOne((r) => r.url.includes('fields=sheets.properties.title'))
+      .flush({ sheets: [{ properties: { title: 'Lotes_Terminados' } }] });
+    const encabezado = httpMock.expectOne((r) => r.method === 'PUT');
+    expect(encabezado.request.url).toContain(encodeURIComponent("'Lotes_Terminados'!A1"));
+    expect(encabezado.request.body.values).toEqual([['Lote', 'Calibre']]);
+    encabezado.flush({});
+    const agregar = httpMock.expectOne((r) => r.url.includes(':append'));
+    expect(agregar.request.body.values).toEqual([['L1', 'Split']]);
+    agregar.flush({});
+
+    service.agregarFila('t', 'Lotes_Terminados', ['Lote', 'Calibre'], ['L2', 'Split']).subscribe();
+    httpMock.expectOne((r) => r.url.includes(':append'));
+  });
+
   it('converts date/time serial numbers from number-formatted columns', () => {
     let resultado: any[] = [];
     service.obtenerRegistros('token-123').subscribe((r) => (resultado = r));

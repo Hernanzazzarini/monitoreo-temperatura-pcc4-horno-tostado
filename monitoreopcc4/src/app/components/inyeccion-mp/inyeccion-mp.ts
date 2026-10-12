@@ -24,7 +24,8 @@ export class InyeccionMpComponent implements OnInit {
   private trazabilidad = inject(TrazabilidadService);
   private destroyRef = inject(DestroyRef);
 
-  loteEnCurso: Lote | null = null;
+  // Lotes que se están embolsando (pueden ser varios en paralelo, uno por calibre)
+  enCurso: Lote[] = [];
   ultimas: Inyeccion[] | null = null;
   guardando = false;
   mensajeExito = '';
@@ -39,10 +40,19 @@ export class InyeccionMpComponent implements OnInit {
   ngOnInit(): void {
     this.trazabilidad.cola$
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((cola) => (this.loteEnCurso = cola[0] ?? null));
+      .subscribe((cola) => (this.enCurso = cola.filter((l) => l.estado === 'en_curso')));
     this.trazabilidad.ultimasInyecciones$
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((u) => (this.ultimas = u));
+  }
+
+  // Observaciones de la encargada para los lotes en curso
+  get conObservacion(): Lote[] {
+    return this.enCurso.filter((l) => l.observacion);
+  }
+
+  get codigosEnCurso(): string {
+    return this.enCurso.map((l) => l.codigo).join(', ');
   }
 
   async registrar(): Promise<void> {
@@ -62,7 +72,7 @@ export class InyeccionMpComponent implements OnInit {
         loteMp: v.loteMp.trim(),
         envase: v.envase.trim(),
         proveedor: v.proveedor.trim(),
-        loteEnCurso: this.loteEnCurso?.codigo ?? '',
+        loteEnCurso: this.codigosEnCurso,
       });
     } catch (err) {
       console.error(err);

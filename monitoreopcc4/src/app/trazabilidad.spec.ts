@@ -1,17 +1,18 @@
 import { RegistroHorno } from './services/google-drive';
 import {
+  FILTRO_VACIO,
   Inyeccion,
   Lote,
-  codigoLote,
   controlesDeLote,
   controlesDelLote,
+  correlativos,
   filtrarLotes,
   filaLoteTerminado,
-  generarCodigos,
   inyeccionesDelLote,
+  kgTotales,
   ordenarCola,
-  parsearCodigo,
-  siguienteNumero,
+  siguienteCodigo,
+  siguienteDeCalibre,
 } from './trazabilidad';
 
 const control = (hora: string, quemadores: number[]): RegistroHorno => ({
@@ -37,20 +38,29 @@ const inyeccion = (hh: number, mm: number, envase: string, loteMp = 'MP1'): Inye
 });
 
 describe('trazabilidad', () => {
-  it('builds correlative lot codes RT + cliente + nro + H + año', () => {
-    expect(codigoLote('1', 1, 2026)).toBe('RT01001H26');
-    expect(generarCodigos('01', 1, 3, 2026)).toEqual(['RT01001H26', 'RT01002H26', 'RT01003H26']);
-    expect(parsearCodigo('RT07123H26')).toEqual({ cliente: '07', numero: 123, anio: 2026 });
-    expect(parsearCodigo('XX')).toBeNull();
+  it('builds correlatives from a free-form lot code', () => {
+    expect(siguienteCodigo('RT01001H26')).toBe('RT01002H26');
+    expect(siguienteCodigo('2610-07')).toBe('2611-07');
+    expect(siguienteCodigo('A099')).toBe('A100');
+    expect(siguienteCodigo('SPLIT')).toBeNull();
+    expect(correlativos('RT01001H26', 3)).toEqual(['RT01001H26', 'RT01002H26', 'RT01003H26']);
+    expect(correlativos('SPLIT', 1)).toEqual(['SPLIT']);
+    expect(correlativos('SPLIT', 2)).toBeNull();
   });
 
-  it('proposes the next free number of the year', () => {
-    const lotes = [
-      { numero: 4, anio: 2026 },
-      { numero: 9, anio: 2025 },
+  it('starts the next scheduled lot of the same calibre', () => {
+    const lote = (codigo: string, orden: number, calibre: string, estado: Lote['estado']) =>
+      ({ codigo, orden, calibre, estado }) as Lote;
+    const split = lote('S1', 1, 'Split', 'en_curso');
+    const cola = [
+      split,
+      lote('B1', 2, 'Barrido', 'en_curso'),
+      lote('B2', 3, 'Barrido', 'pendiente'),
+      lote('S2', 4, 'Split', 'pendiente'),
     ];
-    expect(siguienteNumero(lotes, 2026)).toBe(5);
-    expect(siguienteNumero(lotes, 2027)).toBe(1);
+    expect(siguienteDeCalibre(cola, split)?.codigo).toBe('S2');
+    expect(siguienteDeCalibre(cola.slice(0, 3), split)).toBeUndefined();
+    expect(kgTotales({ unidades: 3, kgPorEnvase: 22.7 })).toBe(68.1);
   });
 
   it('orders the queue and leaves out closed lots', () => {
@@ -80,15 +90,17 @@ describe('trazabilidad', () => {
   it('builds the Lotes_Terminados row', () => {
     const lote: Lote = {
       codigo: 'RT01001H26',
-      cliente: '01',
-      numero: 1,
-      anio: 2026,
+      cliente: 'Arcor',
+      calibre: 'Split',
+      envases: 50,
+      kgPorEnvase: 25,
       orden: 1,
       estado: 'cerrado',
       unidades: 42,
       inicio: new Date(2026, 9, 9, 8, 0),
       fin: new Date(2026, 9, 9, 9, 30),
       cerradoPor: 'op@x.com',
+      observacion: 'Bolsa nueva',
     };
     const fila = filaLoteTerminado(
       lote,
@@ -97,11 +109,15 @@ describe('trazabilidad', () => {
     );
     expect(fila).toEqual([
       'RT01001H26',
-      '01',
+      'Arcor',
+      'Split',
       '09/10/2026 08:00',
       '09/10/2026 09:30',
       90,
+      50,
       42,
+      25,
+      1050,
       'MP1, MP2',
       'MP1 / 2, MP2 / 3',
       'Prov',
@@ -110,24 +126,26 @@ describe('trazabilidad', () => {
       75,
       1,
       'op@x.com',
+      'Bolsa nueva',
     ]);
   });
 
-  it('filters lots by code, client and overlapping dates, newest first', () => {
-    const lote = (codigo: string, cliente: string, inicio: Date | null, fin: Date | null) =>
-      ({ codigo, cliente, inicio, fin }) as Lote;
+  it('filters lots by code, client, calibre and overlapping dates, newest first', () => {
+    const lote = (codigo: string, cliente: string, inicio: Date | null, fin: Date | null, calibre = 'Split') =>
+      ({ codigo, cliente, calibre, inicio, fin }) as Lote;
     const lotes = [
       lote('RT01001H26', '01', new Date(2026, 9, 1, 8), new Date(2026, 9, 1, 10)),
-      lote('RT01002H26', '01', new Date(2026, 9, 5, 8), null), // en curso
+      lote('RT01002H26', '01', new Date(2026, 9, 5, 8), null, 'Barrido'), // en curso
       lote('RT02001H26', '02', new Date(2026, 9, 3, 8), new Date(2026, 9, 3, 9)),
       lote('RT01003H26', '01', null, null), // pendiente: no se muestra
     ];
-    const codigos = (f: Partial<{ texto: string; cliente: string; desde: string; hasta: string }>) =>
-      filtrarLotes(lotes, { texto: '', cliente: '', desde: '', hasta: '', ...f }).map((l) => l.codigo);
+    const codigos = (f: Partial<typeof FILTRO_VACIO>) =>
+      filtrarLotes(lotes, { ...FILTRO_VACIO, ...f }).map((l) => l.codigo);
 
     expect(codigos({})).toEqual(['RT01002H26', 'RT02001H26', 'RT01001H26']);
     expect(codigos({ texto: 'rt01001' })).toEqual(['RT01001H26']);
     expect(codigos({ cliente: '02' })).toEqual(['RT02001H26']);
+    expect(codigos({ calibre: 'Barrido' })).toEqual(['RT01002H26']);
     expect(codigos({ desde: '2026-10-02', hasta: '2026-10-04' })).toEqual(['RT02001H26']);
     expect(codigos({ desde: '2026-10-06' })).toEqual(['RT01002H26']);
   });

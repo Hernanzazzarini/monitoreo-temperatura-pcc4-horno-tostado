@@ -1,3 +1,77 @@
+.content.ancho {
+  max-width: 1200px;
+}
+
+.paneles {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.paneles.varios {
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.paneles.varios .btn-mas {
+  min-height: 7rem;
+}
+
+.panel.completo {
+  outline: 3px solid #27ae60;
+}
+
+.numero small {
+  font-size: 2rem;
+  color: #7f8c8d;
+}
+
+.barra {
+  width: 100%;
+  height: 8px;
+  background: #ecf0f1;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.barra span {
+  display: block;
+  height: 100%;
+  background: #27ae60;
+}
+
+.aviso-completo {
+  color: #1e8449;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.btn-iniciar {
+  background: #2980b9;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 0.6rem 1.2rem;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.scroll {
+  overflow-x: auto;
+}
+
+.panel .nota-encargada {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  text-align: left;
+}
+
+.obs-fila {
+  display: block;
+  font-size: 0.85rem;
+  color: #7a5c00;
+}
+
 .panel {
   display: flex;
   flex-direction: column;
@@ -86,17 +160,4 @@
 
 .btn-cerrar.confirmar {
   background: #c0392b;
-}
-
-.proximos {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-}
-
-.proximos .codigo {
-  background: #ecf0f1;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 0.9rem;
 }

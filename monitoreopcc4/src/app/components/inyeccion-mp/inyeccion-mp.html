@@ -5,9 +5,14 @@
     <div class="card">
       <h2>Cargar envase en la tolva</h2>
       <p class="subtitle">
-        Lote en curso:
-        <strong class="codigo">{{ loteEnCurso?.codigo ?? 'ninguno' }}</strong>
+        {{ enCurso.length > 1 ? 'Lotes en curso' : 'Lote en curso' }}:
+        <strong class="codigo">{{ codigosEnCurso || 'ninguno' }}</strong>
       </p>
+
+      <div *ngFor="let l of conObservacion" class="nota-encargada" role="note">
+        <strong>📝 {{ l.codigo }}<span *ngIf="l.calibre"> ({{ l.calibre }})</span>:</strong>
+        {{ l.observacion }}
+      </div>
 
       <form [formGroup]="form" (ngSubmit)="registrar()">
         <div class="form-row">

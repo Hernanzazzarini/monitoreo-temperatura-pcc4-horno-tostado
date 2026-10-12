@@ -19,11 +19,18 @@ service cloud.firestore {
       allow write: if esAdmin();
     }
 
-    // Cola de lotes: encargada/admin los generan y quitan; cualquier usuario embolsa y cierra
+    // Cola de lotes. Los lotes son únicos: el código es el id del documento, "create" solo
+    // aplica si no existe y nadie puede cambiar el código de uno existente.
+    // Encargada/admin los generan, editan (observación) y quitan; el personal solo embolsa y cierra.
     match /lotes/{codigo} {
       allow read: if autenticado();
-      allow create, delete: if generaLotes();
-      allow update: if autenticado();
+      allow create: if generaLotes() && request.resource.data.codigo == codigo;
+      allow delete: if generaLotes();
+      allow update: if request.resource.data.codigo == resource.data.codigo && (
+        generaLotes() ||
+        (autenticado() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(
+          ['unidades', 'estado', 'inicio', 'fin', 'respaldado', 'cerradoPor', 'materiaPrima']))
+      );
     }
 
     // Envases cargados en la tolva: no se modifican ni se borran

@@ -7,6 +7,7 @@ import {
   collectionData,
   deleteDoc,
   doc,
+  getDoc,
   getDocs,
   increment,
   limit,
@@ -28,14 +29,15 @@ import {
   Lote,
   SOLAPA_INYECCION,
   SOLAPA_LOTES,
-  codigoLote,
   controlesDelLote,
   filaInyeccion,
   filaLoteTerminado,
   inyeccionesDelLote,
   ordenarCola,
-  siguienteNumero,
 } from '../trazabilidad';
+
+// Datos que la encargada programa para cada lote
+export type DatosLote = Pick<Lote, 'cliente' | 'calibre' | 'envases' | 'kgPorEnvase' | 'observacion'>;
 
 // Firestore devuelve las fechas como Timestamp
 const aFecha = (v: any): Date | null => (v instanceof Timestamp ? v.toDate() : (v ?? null));
@@ -46,6 +48,9 @@ function docAInyeccion(d: any): Inyeccion {
 
 function docALote(d: any): Lote {
   return {
+    calibre: '',
+    envases: 0,
+    kgPorEnvase: 0,
     ...d,
     inicio: aFecha(d.inicio),
     fin: aFecha(d.fin),
@@ -100,23 +105,26 @@ export class TrazabilidadService {
     return snap.docs.map((d) => docALote(d.data()));
   }
 
-  // Primer correlativo libre del cliente en el año
-  async siguienteNumero(cliente: string, anio: number): Promise<number> {
-    const snap = await getDocs(query(this.lotes, where('cliente', '==', cliente)));
-    return siguienteNumero(
-      snap.docs.map((d) => d.data() as Lote),
-      anio,
-    );
+  // Códigos que ya están usados por algún lote (programado, en curso o cerrado)
+  async codigosExistentes(codigos: string[]): Promise<string[]> {
+    const snaps = await Promise.all(codigos.map((c) => getDoc(doc(this.lotes, c))));
+    return snaps.filter((s) => s.exists()).map((s) => s.id);
   }
 
-  /** Agrega a la cola la secuencia de lotes; falla si alguno de los códigos ya existe. */
-  async generarLotes(cliente: string, desde: number, cantidad: number, anio: number): Promise<string[]> {
+  /**
+   * Agrega los lotes al final de la cola. Los lotes son únicos: el código es el id del documento
+   * y la transacción falla si alguno ya existe (las reglas de Firestore tampoco dejan pisarlo).
+   */
+  async generarLotes(codigos: string[], datos: DatosLote): Promise<string[]> {
+    if (new Set(codigos).size !== codigos.length) {
+      throw new LotesExistentesError(codigos.filter((c, i) => codigos.indexOf(c) !== i));
+    }
     const ordenBase = Date.now() * 1000;
-    const nuevos: Lote[] = Array.from({ length: cantidad }, (_, i) => ({
-      codigo: codigoLote(cliente, desde + i, anio),
-      cliente,
-      numero: desde + i,
-      anio,
+    const { observacion, ...resto } = datos;
+    const nuevos: Lote[] = codigos.map((codigo, i) => ({
+      codigo,
+      ...resto,
+      ...(observacion ? { observacion, observacionPor: this.email } : {}),
       orden: ordenBase + i,
       estado: 'pendiente',
       unidades: 0,
@@ -137,11 +145,24 @@ export class TrazabilidadService {
     return nuevos.map((l) => l.codigo);
   }
 
+  /** Observación de la encargada para el lote ('' la borra). */
+  async guardarObservacion(lote: Lote, texto: string): Promise<void> {
+    await updateDoc(doc(this.lotes, lote.codigo), {
+      observacion: texto,
+      observacionPor: texto ? this.email : '',
+    });
+  }
+
   async quitarDeCola(lote: Lote): Promise<void> {
     await deleteDoc(doc(this.lotes, lote.codigo));
   }
 
-  /** +1 / -1 unidad embolsada. La primera unidad del primer lote de la cola abre su ventana. */
+  /** Empieza a embolsar un lote programado (en paralelo con los que ya están en curso). */
+  async iniciarLote(lote: Lote): Promise<void> {
+    await updateDoc(doc(this.lotes, lote.codigo), { estado: 'en_curso', inicio: new Date() });
+  }
+
+  /** +1 / -1 envase embolsado. El primer envase de un lote pendiente abre su ventana. */
   async sumarUnidad(lote: Lote, delta: 1 | -1): Promise<void> {
     if (delta < 0 && lote.unidades <= 0) return;
     await updateDoc(doc(this.lotes, lote.codigo), {
@@ -165,7 +186,7 @@ export class TrazabilidadService {
 
   /**
    * Cierra el lote guardando la materia prima que lo formó, y abre en el mismo instante el
-   * siguiente de la cola (su ventana empieza ahora). El respaldo en la planilla va aparte.
+   * siguiente de su calibre (su ventana empieza ahora). El respaldo en la planilla va aparte.
    */
   async cerrarLote(lote: Lote, siguiente: Lote | undefined): Promise<Lote> {
     const ahora = new Date();
