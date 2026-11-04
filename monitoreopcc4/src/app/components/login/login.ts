@@ -4,6 +4,7 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { Router } from '@angular/router';
 import { take } from 'rxjs';
 import { AuthService } from '../../services/auth';
+import { rutaInicial } from '../../permisos';
 
 @Component({
   selector: 'app-login',
@@ -34,13 +35,15 @@ export class LoginComponent {
 
     this.authService.login(email, password).subscribe({
       next: () => {
-        // Al iniciar sesión con éxito, verificamos si es admin o redirigimos al monitoreo
-        this.authService.isAdmin().pipe(take(1)).subscribe(isAdmin => {
+        // Al iniciar sesión, el admin va a usuarios y el resto a su primera pantalla habilitada
+        this.authService.perfil().pipe(take(1)).subscribe((perfil) => {
           this.loading = false;
-          if (isAdmin) {
-            this.router.navigate(['/admin-usuarios']);
+          const ruta = rutaInicial(perfil);
+          if (ruta) {
+            this.router.navigate([ruta]);
           } else {
-            this.router.navigate(['/monitoreo']);
+            this.errorMessage = 'Su usuario no tiene pantallas habilitadas. Consulte al administrador.';
+            this.authService.logout().subscribe();
           }
         });
       },

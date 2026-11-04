@@ -14,7 +14,7 @@ describe('LoginComponent', () => {
       imports: [LoginComponent],
       providers: [
         provideRouter([]),
-        { provide: AuthService, useValue: { login: () => of({}), isAdmin: () => of(false) } },
+        { provide: AuthService, useValue: { login: () => of({}), isAdmin: () => of(false), perfil: () => of({ rol: 'operador' }) } },
       ],
     }).compileComponents();
 

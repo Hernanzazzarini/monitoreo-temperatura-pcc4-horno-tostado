@@ -37,7 +37,31 @@ describe('AdminUsuariosComponent', () => {
     component.nuevoUsuarioForm.setValue({ email: 'op@x.com', password: 'secreta1', role: 'operador' });
     await component.crearUsuario();
 
-    expect(authMock.crearUsuario).toHaveBeenCalledWith('op@x.com', 'secreta1', 'operador');
+    expect(authMock.crearUsuario).toHaveBeenCalledWith('op@x.com', 'secreta1', 'operador', [
+      'monitoreo',
+      'historial',
+      'dashboard',
+      'inyeccion-mp',
+      'embolse',
+      'trazabilidad',
+    ]);
+  });
+
+  it('creates a user with only the checked screens', async () => {
+    fixture.detectChanges();
+    component.nuevoUsuarioForm.setValue({ email: 'op@x.com', password: 'secreta1', role: 'encargada' });
+    expect(component.pantallasNuevo.has('lotes')).toBe(true);
+    component.alternar(component.pantallasNuevo, 'monitoreo');
+    component.alternar(component.pantallasNuevo, 'historial');
+    component.alternar(component.pantallasNuevo, 'dashboard');
+    await component.crearUsuario();
+
+    expect(authMock.crearUsuario).toHaveBeenCalledWith('op@x.com', 'secreta1', 'encargada', [
+      'lotes',
+      'inyeccion-mp',
+      'embolse',
+      'trazabilidad',
+    ]);
     expect(component.mensajeExito).toContain('op@x.com');
   });
 

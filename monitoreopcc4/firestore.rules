@@ -4,14 +4,23 @@ service cloud.firestore {
     function autenticado() {
       return request.auth != null;
     }
+    function usuario() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
     function rol() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+      return usuario().role;
     }
     function esAdmin() {
       return autenticado() && rol() == 'admin';
     }
+    // Genera lotes quien tiene habilitada la pantalla Lotes (users/{uid}.pantallas);
+    // sin permisos propios, admin y encargada
     function generaLotes() {
-      return autenticado() && rol() in ['admin', 'encargada'];
+      return autenticado() && (
+        rol() == 'admin' ||
+        ('pantallas' in usuario() && 'lotes' in usuario().pantallas) ||
+        (!('pantallas' in usuario()) && rol() == 'encargada')
+      );
     }
 
     match /users/{uid} {

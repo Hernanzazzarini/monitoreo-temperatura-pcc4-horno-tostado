@@ -18,7 +18,7 @@ describe('EncabezadoComponent', () => {
   let fixture: ComponentFixture<EncabezadoComponent>;
   let notificacionesMock: any;
 
-  async function crear(rol: 'admin' | 'encargada' | 'operador') {
+  async function crear(rol: 'admin' | 'encargada' | 'operador', pantallas?: string[]) {
     notificacionesMock = {
       alertas$: of([ALERTA]),
       noLeidas$: of(1),
@@ -35,7 +35,7 @@ describe('EncabezadoComponent', () => {
           provide: AuthService,
           useValue: {
             user$: of({ email: 'admin@x.com' }),
-            rol: () => of(rol),
+            perfil: () => of({ rol, pantallas }),
             logout: () => of(),
           },
         },
@@ -73,6 +73,12 @@ describe('EncabezadoComponent', () => {
     const textos = enlaces.map((a) => a.textContent?.trim());
     expect(textos).not.toContain('Lotes');
     expect(textos).toEqual(expect.arrayContaining(['Inyección MP', 'Embolse']));
+  });
+
+  it('shows only the screens enabled for the user', async () => {
+    await crear('operador', ['embolse', 'lotes']);
+    const enlaces = [...(fixture.nativeElement as HTMLElement).querySelectorAll('.btn-nav')];
+    expect(enlaces.map((a) => a.textContent?.trim())).toEqual(['Lotes', 'Embolse']);
   });
 
   it('shows the unread badge and marks alerts as read when opened', async () => {
