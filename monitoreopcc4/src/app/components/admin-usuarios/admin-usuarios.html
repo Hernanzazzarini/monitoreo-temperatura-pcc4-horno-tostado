@@ -1,5 +1,5 @@
 <div class="admin-container">
-  <app-encabezado titulo="Panel de Administración · PCC N°4"></app-encabezado>
+  <app-encabezado titulo="Panel de Administración .USUARIOS"></app-encabezado>
   
     <main class="content">
       <div class="card">
@@ -20,10 +20,28 @@
               <label for="nuevo-rol">Rol</label>
               <select id="nuevo-rol" formControlName="role">
                 <option value="operador">Operador</option>
+                <option value="encargada">Encargada</option>
                 <option value="admin">Administrador</option>
               </select>
             </div>
           </div>
+
+          <fieldset class="permisos">
+            <legend>Pantallas que puede ver</legend>
+            <p *ngIf="nuevoUsuarioForm.value.role === 'admin'" class="nota">
+              El administrador ve todas las pantallas.
+            </p>
+            <div *ngIf="nuevoUsuarioForm.value.role !== 'admin'" class="casillas">
+              <label *ngFor="let p of pantallas" class="casilla">
+                <input
+                  type="checkbox"
+                  [checked]="pantallasNuevo.has(p.id)"
+                  (change)="alternar(pantallasNuevo, p.id)"
+                />
+                {{ p.texto }}
+              </label>
+            </div>
+          </fieldset>
 
           <div *ngIf="mensajeExito" class="alert success-alert">{{ mensajeExito }}</div>
           <div *ngIf="mensajeError" class="alert error-alert">{{ mensajeError }}</div>
@@ -49,19 +67,65 @@
             <tr>
               <th>Correo Electrónico</th>
               <th>Rol</th>
+              <th>Pantallas</th>
               <th>Fecha de Alta</th>
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let u of usuarios">
+            <ng-container *ngFor="let u of usuarios">
+            <tr>
               <td>{{ u.email }}</td>
               <td>
-                <span class="badge" [ngClass]="u.role === 'admin' ? 'badge-admin' : 'badge-operator'">
+                <span class="badge" [ngClass]="'badge-' + u.role">
                   {{ u.role }}
                 </span>
               </td>
+              <td>
+                <span *ngIf="u.role === 'admin'" class="nota">Todas</span>
+                <ng-container *ngIf="u.role !== 'admin'">
+                  <span *ngIf="!textosPantallas(u).length" class="nota">Ninguna</span>
+                  <span *ngFor="let t of textosPantallas(u)" class="chip">{{ t }}</span>
+                  <button
+                    *ngIf="editando !== u.uid"
+                    type="button"
+                    class="btn-link"
+                    (click)="editar(u)"
+                  >
+                    Editar permisos
+                  </button>
+                </ng-container>
+              </td>
               <td>{{ u.createdAt?.toDate() | date:'short' }}</td>
             </tr>
+            <tr *ngIf="editando === u.uid" class="fila-edicion">
+              <td colspan="4">
+                <div class="casillas">
+                  <label *ngFor="let p of pantallas" class="casilla">
+                    <input
+                      type="checkbox"
+                      [checked]="seleccion.has(p.id)"
+                      (change)="alternar(seleccion, p.id)"
+                    />
+                    {{ p.texto }}
+                  </label>
+                </div>
+                <p *ngIf="errorPermisos" class="alert error-alert">{{ errorPermisos }}</p>
+                <div class="acciones-edicion">
+                  <button type="button" class="btn-secundario" (click)="cancelarEdicion()">
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    class="btn-guardar"
+                    [disabled]="guardando"
+                    (click)="guardarPermisos(u)"
+                  >
+                    {{ guardando ? 'Guardando...' : 'Guardar permisos' }}
+                  </button>
+                </div>
+              </td>
+            </tr>
+            </ng-container>
           </tbody>
         </table>
       </div>

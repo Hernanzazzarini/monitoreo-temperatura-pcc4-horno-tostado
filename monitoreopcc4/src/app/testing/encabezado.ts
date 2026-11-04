@@ -5,6 +5,8 @@ import { NotificacionesService } from '../services/notificaciones';
 export const AUTH_ENCABEZADO = {
   user$: of({ email: 'op@x.com' }),
   isAdmin: () => of(false),
+  rol: () => of('operador'),
+  perfil: () => of({ rol: 'operador' }),
   logout: () => of(),
 };
 

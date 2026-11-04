@@ -66,6 +66,48 @@ describe('GoogleDriveService', () => {
     });
   });
 
+  it('creates a missing tab with its header before appending', () => {
+    service.agregarFila('t', 'Lotes_Terminados', ['Lote', 'Unidades'], ['RT01001H26', 5]).subscribe();
+
+    httpMock
+      .expectOne((r) => r.url.includes('fields=sheets.properties.title'))
+      .flush({ sheets: [{ properties: { title: 'Hoja 1' } }] });
+    const crear = httpMock.expectOne((r) => r.url.endsWith(':batchUpdate'));
+    expect(crear.request.body.requests[0].addSheet.properties.title).toBe('Lotes_Terminados');
+    crear.flush({});
+    const agregar = httpMock.expectOne((r) => r.url.includes(':append'));
+    expect(agregar.request.url).toContain(encodeURIComponent("'Lotes_Terminados'!A1"));
+    expect(agregar.request.body.values).toEqual([
+      ['Lote', 'Unidades'],
+      ['RT01001H26', 5],
+    ]);
+    agregar.flush({});
+
+    // La segunda vez ya se sabe que existe: solo agrega la fila
+    service.agregarFila('t', 'Lotes_Terminados', ['Lote', 'Unidades'], ['RT01002H26', 3]).subscribe();
+    expect(httpMock.expectOne((r) => r.url.includes(':append')).request.body.values).toEqual([
+      ['RT01002H26', 3],
+    ]);
+  });
+
+  it('refreshes the header row of an existing tab once per session', () => {
+    service.agregarFila('t', 'Lotes_Terminados', ['Lote', 'Calibre'], ['L1', 'Split']).subscribe();
+
+    httpMock
+      .expectOne((r) => r.url.includes('fields=sheets.properties.title'))
+      .flush({ sheets: [{ properties: { title: 'Lotes_Terminados' } }] });
+    const encabezado = httpMock.expectOne((r) => r.method === 'PUT');
+    expect(encabezado.request.url).toContain(encodeURIComponent("'Lotes_Terminados'!A1"));
+    expect(encabezado.request.body.values).toEqual([['Lote', 'Calibre']]);
+    encabezado.flush({});
+    const agregar = httpMock.expectOne((r) => r.url.includes(':append'));
+    expect(agregar.request.body.values).toEqual([['L1', 'Split']]);
+    agregar.flush({});
+
+    service.agregarFila('t', 'Lotes_Terminados', ['Lote', 'Calibre'], ['L2', 'Split']).subscribe();
+    httpMock.expectOne((r) => r.url.includes(':append'));
+  });
+
   it('converts date/time serial numbers from number-formatted columns', () => {
     let resultado: any[] = [];
     service.obtenerRegistros('token-123').subscribe((r) => (resultado = r));

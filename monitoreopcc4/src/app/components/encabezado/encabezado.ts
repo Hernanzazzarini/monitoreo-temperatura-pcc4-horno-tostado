@@ -3,21 +3,14 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth';
+import { PANTALLAS, Perfil, pantallasPermitidas } from '../../permisos';
 import { describirErrorGoogle } from '../../services/google-drive';
 import { Alerta, NotificacionesService } from '../../services/notificaciones';
 
 interface Enlace {
   ruta: string;
   texto: string;
-  soloAdmin?: boolean;
 }
-
-const ENLACES: Enlace[] = [
-  { ruta: '/monitoreo', texto: 'Nuevo control' },
-  { ruta: '/historial', texto: 'Historial' },
-  { ruta: '/dashboard', texto: 'Dashboard' },
-  { ruta: '/admin-usuarios', texto: 'Gestión de Usuarios', soloAdmin: true },
-];
 
 /** Encabezado común: título, usuario conectado, navegación, notificaciones y cierre de sesión. */
 @Component({
@@ -37,7 +30,7 @@ export class EncabezadoComponent implements OnInit {
   @Input() titulo = '';
 
   email = '';
-  isAdmin = false;
+  perfil: Perfil | null = null;
   alertas: Alerta[] | null = null;
   noLeidas = 0;
   abierto = false;
@@ -50,7 +43,7 @@ export class EncabezadoComponent implements OnInit {
     this.authService.user$
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((user) => (this.email = user?.email ?? ''));
-    this.authService.isAdmin().subscribe((admin) => (this.isAdmin = admin));
+    this.authService.perfil().subscribe((perfil) => (this.perfil = perfil));
     this.notificaciones.alertas$
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((alertas) => (this.alertas = alertas));
@@ -63,7 +56,15 @@ export class EncabezadoComponent implements OnInit {
 
   get enlaces(): Enlace[] {
     const actual = this.router.url.split('?')[0];
-    return ENLACES.filter((e) => e.ruta !== actual && (!e.soloAdmin || this.isAdmin));
+    const permitidas = pantallasPermitidas(this.perfil);
+    const enlaces: Enlace[] = PANTALLAS.filter((p) => permitidas.includes(p.id)).map((p) => ({
+      ruta: '/' + p.id,
+      texto: p.texto,
+    }));
+    if (this.perfil?.rol === 'admin') {
+      enlaces.push({ ruta: '/admin-usuarios', texto: 'Gestión de Usuarios' });
+    }
+    return enlaces.filter((e) => e.ruta !== actual);
   }
 
   get permiso() {
